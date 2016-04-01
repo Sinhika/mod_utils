@@ -26,6 +26,7 @@ use Cwd;
 use File::Spec;
 use File::Copy;
 use File::Path qw(make_path);
+use List::MoreUtils qw(uniq);
 
 # constants to be re-defined when necessary
 # where are the vamilla assets?
@@ -103,6 +104,21 @@ exit;
 
 =over
 
+=item get_response
+
+=cut
+
+sub get_response
+{
+    my $prompt = $_[0];
+    my $resp;
+
+    print $prompt;
+    $resp = <STDIN>;
+    chomp($resp);
+    return $resp; 
+}
+
 =item get_block_info
 
 =cut
@@ -110,9 +126,97 @@ exit;
 sub get_block_info
 {
     my $block_type = $_[0];
+    my $resp;
+    my $prompt;
+    my $block_stem;
+    my ($template_json, $template_model, $template_texture);
+    my $templ_model_stem;
+    my @out_jsons;
+    my ($out_model_stem, $out_texture);
 
-    print "block_type ${block_type} not yet implemented.\n";
+    if ($block_type eq 'G')
+    {
+        $prompt = "Vanilla block to use as template (e.g. cobblestone): ";
+        ($block_stem, $template_json) =
+            get_template($prompt, $MC_BLOCKSTATE_PATH);
+        $prompt = "Name of block to create files for (e.g. copper_block): ";
+        @out_jsons = get_simple_item_json($prompt, $BLOCKSTATE_PATH);
+        my @models = find_model_variants($template_json);
+
+        print "Source blockstate: ", $template_json, "\n";
+        print " models to copy: ";
+        map {print "\t${_}\n" } @models;
+        print "Target blockstate: ", $out_jsons[1], "\n";
+        $prompt = "Source modelname stem to replace: ";
+        $templ_model_stem = get_response($prompt);
+        $prompt = "Target modelname stem to replace it with: ";
+        $out_model_stem = get_response($prompt);
+        $prompt = "Target texture to use: ";
+        $out_texture = get_response($prompt);
+       
+        copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
+                        $out_model_stem);
+                    
+        copy_models($templ_model_stem, $out_model_stem, $out_texture, \@models)
+        
+    }
+    else {
+        print "block_type ${block_type} not yet implemented.\n";
+
+    }
 } ## end-get_block_info
+
+=item copy_models
+
+=cut
+
+sub copy_models
+{
+    my ($in_mstem, $out_mstem, $new_texture, $model_list) = @_;
+    my ($in_model_path, $out_model_path, $out_model);
+
+    foreach my $model (@$model_list)
+    {
+        $in_model_path = File::Spec->catfile($MC_BLOCK_MODEL_PATH,
+                                             "${model}.json");
+        $model =~ s/${in_mstem}/${out_mstem}/;
+        $out_model = $model . ".json";
+        $out_model_path = File::Spec->catfile($BLOCK_MODEL_PATH, $out_model);
+        open (my $fh, "<", $in_model_path) 
+            or die "Unable to open ${in_model_path}: $!";
+        open (my $fh2, ">", $out_model_path) 
+            or die "Unable to open ${out_model_path}: $!";
+
+        while (my $line = <$fh>)
+        {
+            $line =~ s/"texture":\s*"(.*?)"/"texture": "${new_texture}"/;
+            $line =~ s/"all":\s*"(.*?)"/"all": "${new_texture}"/;
+            print $fh2 $line;
+        } ## end-while
+        close $fh2;
+        close $fh;
+    } ## end-foreach
+} ## end copy_models()
+
+
+=item copy_blockstate
+
+=cut
+
+sub copy_blockstate
+{
+    my ($in_json, $in_mstem, $out_json, $out_mstem) = @_;
+    open (my $fh, "<", $in_json) or die "Unable to open ${in_json}: $!";
+    open (my $fh2, ">", $out_json) or die "Unable to open ${out_json}: $!";
+    while (my $line = <$fh>)
+    {
+        $line =~ s/$in_mstem/$out_mstem/;
+        print $fh2 $line;
+    }
+    close $fh;
+    close $fh2;
+} ## end copy_blockstate()
+
 
 =item get_item_info
 
@@ -171,17 +275,13 @@ sub get_template
 {
     my $prompt = $_[0];
     my $mc_path = $_[1];
-    my $resp; 
     my $template = 0;
     my $stem;
 
     while (! $template) 
     {
-        print $prompt;
-        $resp = <STDIN>;
-        chomp($resp);
-        $stem = $resp;
-        $template = File::Spec->catfile($mc_path, $resp);
+        $stem = get_response($prompt);
+        $template = File::Spec->catfile($mc_path, $stem);
         if ($template !~ /\.json$/) {
             $template .= '.json';
         }
@@ -205,14 +305,34 @@ sub get_simple_item_json
     my $json;
     my $resp;
 
-    print $prompt;
-    $resp = <STDIN>;
-    chomp($resp);
+    $resp = get_response($prompt);
     $json = File::Spec->catfile($outpath, $resp);
     $json .= '.json';
     return ($resp, $json,);
 } ## end get_simple_item_json()
 
+=item find_model_variants
+
+returns a list of unique models found in a blockstate json.
+
+=cut
+
+sub find_model_variants
+{
+    my $bs_json = $_[0];
+    my @variants = ();
+
+    open (my $fh, "<", $bs_json) or die "Cannot open ${bs_json}: $!";
+    while (my $line = <$fh>)
+    {
+        if ($line =~ /"(.+?)"\s*:\s*{\s*"model"\s*:\s*"(.+?)"/) {
+            push @variants, $2
+        }
+    } ## end-while
+    close $fh;
+    @variants = uniq @variants;
+    return @variants;
+} ## end find_model_variants()
 
 =back
 
