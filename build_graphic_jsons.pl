@@ -6,11 +6,15 @@
 
 =head1 SYNOPSIS
 
-    build_graphic_jsons.pl [top_dir]
+    build_graphic_jsons.pl modid [topdir]
 
 =over
 
-=item top_dir
+=item modid
+
+    mandatory modid tag; to be prefixed to various entries.
+
+=item topdir
 
     Optional root directory for output jsons-usually the assets/modid/ 
     directory. Uses current working directory if not specified.
@@ -37,10 +41,12 @@ my $MC_BLOCK_MODEL_PATH = "${MC_ASSETS}/models/block";
 my $MC_ITEM_MODEL_PATH = "${MC_ASSETS}/models/item";
 
 # output directory is...
-my $TOP_LEVEL = defined($ARGV[0]) ? $ARGV[0] : getcwd();
+my $TOP_LEVEL = defined($ARGV[1]) ? $ARGV[1] : getcwd();
 my $BLOCKSTATE_PATH = "${TOP_LEVEL}/blockstates";
 my $BLOCK_MODEL_PATH = "${TOP_LEVEL}/models/block";
 my $ITEM_MODEL_PATH = "${TOP_LEVEL}/models/item";
+
+my $MODID = $ARGV[0];
 
 my $verbose = 1;
 
@@ -134,7 +140,7 @@ sub get_block_info
     my @out_jsons;
     my ($out_model_stem, $out_texture);
 
-    if ($block_type eq 'G')
+    if ($block_type eq 'G')  # generic block
     {
         $prompt = "Vanilla block to use as template (e.g. cobblestone): ";
         ($block_stem, $template_json) =
@@ -153,7 +159,8 @@ sub get_block_info
         $out_model_stem = get_response($prompt);
         $prompt = "Target texture to use: ";
         $out_texture = get_response($prompt);
-       
+        $out_texture = "${MODID}:${out_texture}";
+
         copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
                         $out_model_stem);
                     
@@ -210,7 +217,7 @@ sub copy_blockstate
     open (my $fh2, ">", $out_json) or die "Unable to open ${out_json}: $!";
     while (my $line = <$fh>)
     {
-        $line =~ s/$in_mstem/$out_mstem/;
+        $line =~ s/$in_mstem/$MODID:$out_mstem/;
         print $fh2 $line;
     }
     close $fh;
@@ -232,36 +239,99 @@ sub get_item_info
     my @out_jsons;
     my $found = 0;
 
-    if ($item_type eq 'G') 
+    if ($item_type eq 'G')  # generic inventory item
     {
         $prompt = "Vanilla item to use as template (e.g. wheat_seeds): ";
         ($item_stem, $item_template) 
             = get_template($prompt, $MC_ITEM_MODEL_PATH);
         $prompt = "Name of item to create files for (e.g. foo_seeds): ";
         @out_jsons = get_simple_item_json($prompt, $ITEM_MODEL_PATH);
-       
-        open(my $fh, "<", $item_template) 
-            or die "Cannot open < ${item_template}: $!";
-        open(my $fh2, ">", $out_jsons[1])
-            or die "Cannot open < " . $out_jsons[1] . ": $!";
-        
-        while (my $line = <$fh>)
-        {
-            if ($line =~ s/${item_stem}/${out_jsons[0]}/ ) {$found = 1};
-            print $fh2 $line;
-        } ## end-while
-        close $fh;
-        close $fh2;
+        print "Source template: ", $item_template, "\n";
+        print "Target template: ", $out_jsons[1], "\n";
+        print "Replace texture ", $item_stem, " with ${MODID}:${out_jsons[0]}\n";
+        $found = copy_item_models($item_template, $item_stem, \@out_jsons);
         if (! $found) {
             print "Unable to find texture name ${item_stem} in ",
                 "${item_template}; you need to change it manually in ",
                 $out_jsons[1],".\n";
         }
     } ## end if 'G'
+    elsif ($item_type eq 'B')  # item-of-block
+    {
+        $prompt = "Vanilla item-of-block to use as template (e.g. iron_block): ";
+        ($item_stem, $item_template) 
+            = get_template($prompt, $MC_ITEM_MODEL_PATH);
+        $prompt = "Name of item to create files for (e.g. fooblock): ";
+        @out_jsons = get_item_of_block_json($prompt, $ITEM_MODEL_PATH);
+        print "Source template: ", $item_template, "\n";
+        print "Target template: ", $out_jsons[2], "\n";
+        print "Replace texture ", $item_stem, " with ${MODID}:blocks/${out_jsons[1]}\n";
+        $found = copy_itemofblock_models($item_template, $item_stem, \@out_jsons);
+        if (! $found) {
+            print "Unable to find parent reference ${item_stem} in ",
+                "${item_template}; you need to change it manually in ",
+                $out_jsons[2],".\n";
+        }
+    }
     else {
         print "item_type ${item_type}  not yet implemented.\n";
     }
 } ## end get_item_info()
+
+=item copy_itemofblock_models
+
+=cut
+
+sub copy_itemofblock_models
+{
+    my ($item_template, $item_stem, $out_jsons) = @_;
+    my $parent = $out_jsons->[1]; 
+    my $found = 0;
+
+    open(my $fh, "<", $item_template) 
+        or die "Cannot open < ${item_template}: $!";
+    open(my $fh2, ">", $out_jsons->[2])
+        or die "Cannot open < " . $out_jsons->[2] . ": $!";
+    
+    while (my $line = <$fh>)
+    {
+        if ($line =~ s/\"parent\": \"block\/${item_stem}\"/\"parent\": \"${MODID}:block\/${parent}\"/)
+        {
+            $found = 1;
+        }
+        print $fh2 $line;
+    } ## end-while
+    close $fh;
+    close $fh2;
+    return $found;
+
+} ## end sub
+
+=item copy_item_models
+
+=cut
+
+sub copy_item_models
+{
+    my ($item_template, $item_stem, $out_jsons) = @_;
+    my $texture = $out_jsons->[0];
+    my $found = 0;
+
+    open(my $fh, "<", $item_template) 
+        or die "Cannot open < ${item_template}: $!";
+    open(my $fh2, ">", $out_jsons->[1])
+        or die "Cannot open < " . $out_jsons->[1] . ": $!";
+    
+    while (my $line = <$fh>)
+    {
+        if ($line =~ s/${item_stem}/${MODID}:${texture}/ ) {$found = 1};
+        print $fh2 $line;
+    } ## end-while
+    close $fh;
+    close $fh2;
+    return $found;
+} ## end sub
+
 
 =item get_template
 
@@ -294,7 +364,9 @@ sub get_template
     return ($stem, $template);
 } ## end get_template()
 
-=item get_target_info
+=item get_simple_item_json
+
+Just get the item name and make a .json file.
 
 =cut
 
@@ -310,6 +382,23 @@ sub get_simple_item_json
     $json .= '.json';
     return ($resp, $json,);
 } ## end get_simple_item_json()
+
+=item get_item_of_block_json
+
+=cut
+
+sub get_item_of_block_json
+{
+    my $prompt = $_[0];
+    my $outpath = $_[1];
+    my ($json, $stem, $parent);
+    $stem = get_response($prompt);
+    $json = File::Spec->catfile($outpath, $stem);
+    $json .= '.json';
+    $prompt = "Name of parent block (e.g. fooblock): ";
+    $parent = get_response($prompt);
+    return ($stem, $parent, $json);
+} ## end sub
 
 =item find_model_variants
 
