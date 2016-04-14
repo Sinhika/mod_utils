@@ -50,6 +50,8 @@ my $MODID = $ARGV[0];
 
 my $verbose = 1;
 
+die "modid is required!" if ! defined($MODID);
+
 # create if they do not exist.
 make_path($BLOCKSTATE_PATH, $BLOCK_MODEL_PATH, $ITEM_MODEL_PATH);
 
@@ -125,6 +127,22 @@ sub get_response
     return $resp; 
 }
 
+=item check_repeat
+
+=cut
+
+sub check_repeat
+{
+    my $prompt = "Create more from the same template [Y/N]? ";
+    my $resp = get_response($prompt);
+    if ((length($resp) == 0) or (uc(substr($resp,0,1)) eq 'Y')) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+} ## end check_repeat()
+
 =item get_block_info
 
 =cut
@@ -141,7 +159,7 @@ sub get_block_info
     my ($out_model_stem, $out_texture);
     my $not_done = 1;
 
-    if ($block_type eq 'G')  # generic block
+    if ($block_type eq 'G' or $block_type eq 'C')  # generic or crop block
     {
         $prompt = "Vanilla block to use as template (e.g. cobblestone): ";
         ($block_stem, $template_json) =
@@ -162,7 +180,6 @@ sub get_block_info
             $out_model_stem = get_response($prompt);
             $prompt = "Target texture to use: ";
             $out_texture = get_response($prompt);
-            $out_texture = "${MODID}:${out_texture}";
 
             copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
                             $out_model_stem);
@@ -170,14 +187,7 @@ sub get_block_info
             copy_models($templ_model_stem, $out_model_stem, $out_texture, 
                          \@models);
 
-            $prompt = "Create more blocks from the same template [Y/N]? ";
-            $resp = get_response($prompt);
-            if ((length($resp) == 0) or (uc(substr($resp,0,1)) eq 'Y')) {
-                $not_done = 1;
-            }
-            else {
-                $not_done = 0;
-            }
+            $not_done = check_repeat();
         } ## end while not_done 
     }
     elsif ($block_type eq 'F')  # 'face' block
@@ -194,7 +204,7 @@ sub get_block_info
             print "Source blockstate: ", $template_json, "\n";
             for (my $i=0; ($i+2) <= $#models; $i += 3)
             {
-                printf "Variant: %s, model: %s, y=%s\n", $models[$i],
+                printf "Variant: %s, model: %s, rest: %s\n", $models[$i],
                         $models[$i+1], $models[$i+2];
             }
             print "Target blockstate: ", $out_jsons[1], "\n";
@@ -210,21 +220,56 @@ sub get_block_info
                         
             $prompt = "Target texture stem to use (e.g. foo_gourd): ";
             $out_texture = get_response($prompt);
-            $out_texture = "${MODID}:${out_texture}";
 
             # write model files 
             copy_model_with_variants($templ_model_stem, $out_model_stem, 
                                      $out_texture, $models[1]);
             
             # repeat?
-            $prompt = "Create more blocks from the same template [Y/N]? ";
-            $resp = get_response($prompt);
-            if ((length($resp) == 0) or (uc(substr($resp,0,1)) eq 'Y')) {
-                $not_done = 1;
+            $not_done = check_repeat();
+        } ## end while not_done
+    }
+    elsif ($block_type eq 'P')   # pillar/log-type block
+    {
+        $prompt = "Vanilla block to use as template (e.g. acacia_log): ";
+        ($block_stem, $template_json) =
+            get_template($prompt, $MC_BLOCKSTATE_PATH);
+        while ($not_done)
+        {
+            $prompt = "Name of block to create files for (e.g. foo_log): ";
+            @out_jsons = get_simple_item_json($prompt, $BLOCKSTATE_PATH);
+            my @models = find_facing_variants($template_json);
+
+            print "Source blockstate: ", $template_json, "\n";
+            for (my $i=0; ($i+2) <= $#models; $i += 3)
+            {
+                printf "Variant: %s, model: %s, rest: %s\n", $models[$i],
+                        $models[$i+1], $models[$i+2];
             }
-            else {
-                $not_done = 0;
-            }
+            print "Target blockstate: ", $out_jsons[1], "\n";
+
+            $prompt = "Source modelname stem to replace: ";
+            $templ_model_stem = get_response($prompt);
+            $prompt = "Target modelname stem to replace it with: ";
+            $out_model_stem = get_response($prompt);
+
+            # write blockstate file
+            copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
+                            $out_model_stem);
+                        
+            $prompt = "source texture stem to use (e.g. log_acacia): ";
+            $template_texture = get_response($prompt);
+
+            $prompt = "Target texture stem to use (e.g. log_foo): ";
+            $out_texture = get_response($prompt);
+
+            # write model files 
+            copy_more_models_with_var($templ_model_stem, $out_model_stem, 
+                                     $template_texture, $out_texture, 
+                                     \@models);
+
+            # repeat?
+            $not_done = check_repeat();
         } ## end while not_done
     }
     else {
@@ -232,6 +277,45 @@ sub get_block_info
 
     }
 } ## end-get_block_info
+
+
+=item copy_more_models_with_var
+
+=cut
+
+sub copy_more_models_with_var
+{
+    my ($in_mstem, $out_mstem, $old_texture, $new_texture, $model_list) = @_;
+    my ($in_model_path, $out_model_path, $out_model);
+
+    #foreach my $model (@$model_list)
+    for (my $i=0; ($i+2) <= scalar @$model_list;  $i += 3)
+    {
+        my $model = $model_list->[1];
+        my $texfound = 0;
+        $in_model_path = File::Spec->catfile($MC_BLOCK_MODEL_PATH,
+                                             "${model}.json");
+        $model =~ s/${in_mstem}/${out_mstem}/;
+        $out_model = $model . ".json";
+        $out_model_path = File::Spec->catfile($BLOCK_MODEL_PATH, $out_model);
+        open (my $fh, "<", $in_model_path) 
+            or die "Unable to open ${in_model_path}: $!";
+        open (my $fh2, ">", $out_model_path) 
+            or die "Unable to open ${out_model_path}: $!";
+
+        while (my $line = <$fh>)
+        {
+            $texfound = 1 if ($line =~ /"textures"/ );
+            if ($texfound) {
+                $line =~ 
+   s/^(\s*".*?":\s*")blocks\/${old_texture}/$1${MODID}:blocks\/${new_texture}/;
+            }
+            print $fh2 $line;
+        } ## end-while
+        close $fh2;
+        close $fh;
+    } ## end-foreach
+} ## end ()
 
 =item copy_models
 
@@ -291,7 +375,7 @@ sub copy_model_with_variants
     {
         $texfound = 1 if ($line =~ /"textures"/ );
         if ($texfound) {
-            $line =~ s/^(\s*".*?":\s*"blocks\/)${model_stem}/$1${new_texture}/;
+$line =~ s/^(\s*".*?":\s*")blocks\/${model_stem}/$1${MODID}:blocks\/${new_texture}/;
         }
         print $fh2 $line;
     } ## end-while
@@ -353,15 +437,7 @@ sub get_item_info
                     $out_jsons[1],".\n";
             }
 
-            $prompt = "Create more items from the same template [Y/N]? ";
-            $resp = get_response($prompt);
-            print $resp, "\n";
-            if ((length($resp) == 0) or (uc(substr($resp,0,1)) eq 'Y')) {
-                $not_done = 1;
-            }
-            else {
-                $not_done = 0;
-            }
+            $not_done = check_repeat();
         } ## end while not_done
     } ## end if 'G'
     elsif ($item_type eq 'B')  # item-of-block
@@ -383,15 +459,7 @@ sub get_item_info
                     $out_jsons[2],".\n";
             }
 
-            $prompt = "Create more items from the same template [Y/N]? ";
-            $resp = get_response($prompt);
-            print $resp, "\n";
-            if ((length($resp) == 0) or (uc(substr($resp,0,1)) eq 'Y')) {
-                $not_done = 1;
-            }
-            else {
-                $not_done = 0;
-            }
+            $not_done = check_repeat();
         } ## end while not_done
     }
     else {
@@ -566,7 +634,8 @@ sub find_facing_variants
         {
             push @variants, ($1, $2, 0);
         }
-        elsif ($line =~ /"(.+?)":\s*{\s*"model":\s*"(.+?)",\s*"y":\s*(\d{2,3})\s*}/) 
+        elsif ($line =~ 
+          /"(.+?)":\s*{\s*"model":\s*"(.+?)",(\s*".+)},?\s*$/) 
         {
             push @variants, ($1, $2, $3);
         }

@@ -1,14 +1,3 @@
-build/
-gradle/
-run/
-libs/
-.settings/
-ashenwheat*.launch
 *.log
-*.jar
-*.class
-gradlew
-gradlew.bat
-bin/
-.gradle/
 *.swp
+test/
