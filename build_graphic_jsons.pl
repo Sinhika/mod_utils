@@ -139,33 +139,46 @@ sub get_block_info
     my $templ_model_stem;
     my @out_jsons;
     my ($out_model_stem, $out_texture);
+    my $not_done = 1;
 
     if ($block_type eq 'G')  # generic block
     {
         $prompt = "Vanilla block to use as template (e.g. cobblestone): ";
         ($block_stem, $template_json) =
             get_template($prompt, $MC_BLOCKSTATE_PATH);
-        $prompt = "Name of block to create files for (e.g. copper_block): ";
-        @out_jsons = get_simple_item_json($prompt, $BLOCKSTATE_PATH);
-        my @models = find_model_variants($template_json);
+        while ($not_done)
+        {
+            $prompt = "Name of block to create files for (e.g. copper_block): ";
+            @out_jsons = get_simple_item_json($prompt, $BLOCKSTATE_PATH);
+            my @models = find_model_variants($template_json);
 
-        print "Source blockstate: ", $template_json, "\n";
-        print " models to copy: ";
-        map {print "\t${_}\n" } @models;
-        print "Target blockstate: ", $out_jsons[1], "\n";
-        $prompt = "Source modelname stem to replace: ";
-        $templ_model_stem = get_response($prompt);
-        $prompt = "Target modelname stem to replace it with: ";
-        $out_model_stem = get_response($prompt);
-        $prompt = "Target texture to use: ";
-        $out_texture = get_response($prompt);
-        $out_texture = "${MODID}:${out_texture}";
+            print "Source blockstate: ", $template_json, "\n";
+            print " models to copy: ";
+            map {print "\t${_}\n" } @models;
+            print "Target blockstate: ", $out_jsons[1], "\n";
+            $prompt = "Source modelname stem to replace: ";
+            $templ_model_stem = get_response($prompt);
+            $prompt = "Target modelname stem to replace it with: ";
+            $out_model_stem = get_response($prompt);
+            $prompt = "Target texture to use: ";
+            $out_texture = get_response($prompt);
+            $out_texture = "${MODID}:${out_texture}";
 
-        copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
-                        $out_model_stem);
-                    
-        copy_models($templ_model_stem, $out_model_stem, $out_texture, \@models)
-        
+            copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
+                            $out_model_stem);
+                        
+            copy_models($templ_model_stem, $out_model_stem, $out_texture, 
+                         \@models);
+
+            $prompt = "Create more blocks from the same template [Y/N]? ";
+            $resp = get_response($prompt);
+            if ((length($resp) == 0) or (uc(substr($resp,0,1)) eq 'Y')) {
+                $not_done = 1;
+            }
+            else {
+                $not_done = 0;
+            }
+        } ## end while not_done 
     }
     else {
         print "block_type ${block_type} not yet implemented.\n";
@@ -238,40 +251,67 @@ sub get_item_info
     my @item_textures;
     my @out_jsons;
     my $found = 0;
+    my $not_done = 1;
 
     if ($item_type eq 'G')  # generic inventory item
     {
         $prompt = "Vanilla item to use as template (e.g. wheat_seeds): ";
         ($item_stem, $item_template) 
             = get_template($prompt, $MC_ITEM_MODEL_PATH);
-        $prompt = "Name of item to create files for (e.g. foo_seeds): ";
-        @out_jsons = get_simple_item_json($prompt, $ITEM_MODEL_PATH);
-        print "Source template: ", $item_template, "\n";
-        print "Target template: ", $out_jsons[1], "\n";
-        print "Replace texture ", $item_stem, " with ${MODID}:${out_jsons[0]}\n";
-        $found = copy_item_models($item_template, $item_stem, \@out_jsons);
-        if (! $found) {
-            print "Unable to find texture name ${item_stem} in ",
-                "${item_template}; you need to change it manually in ",
-                $out_jsons[1],".\n";
-        }
+        while ($not_done)
+        {
+            $prompt = "Name of item to create files for (e.g. foo_seeds): ";
+            @out_jsons = get_simple_item_json($prompt, $ITEM_MODEL_PATH);
+            print "Source template: ", $item_template, "\n";
+            print "Target template: ", $out_jsons[1], "\n";
+            print "Replace texture ", $item_stem, " with ${MODID}:${out_jsons[0]}\n";
+            $found = copy_item_models($item_template, $item_stem, \@out_jsons);
+            if (! $found) {
+                print "Unable to find texture name ${item_stem} in ",
+                    "${item_template}; you need to change it manually in ",
+                    $out_jsons[1],".\n";
+            }
+
+            $prompt = "Create more items from the same template [Y/N]? ";
+            $resp = get_response($prompt);
+            print $resp, "\n";
+            if ((length($resp) == 0) or (uc(substr($resp,0,1)) eq 'Y')) {
+                $not_done = 1;
+            }
+            else {
+                $not_done = 0;
+            }
+        } ## end while not_done
     } ## end if 'G'
     elsif ($item_type eq 'B')  # item-of-block
     {
         $prompt = "Vanilla item-of-block to use as template (e.g. iron_block): ";
         ($item_stem, $item_template) 
             = get_template($prompt, $MC_ITEM_MODEL_PATH);
-        $prompt = "Name of item to create files for (e.g. fooblock): ";
-        @out_jsons = get_item_of_block_json($prompt, $ITEM_MODEL_PATH);
-        print "Source template: ", $item_template, "\n";
-        print "Target template: ", $out_jsons[2], "\n";
-        print "Replace texture ", $item_stem, " with ${MODID}:blocks/${out_jsons[1]}\n";
-        $found = copy_itemofblock_models($item_template, $item_stem, \@out_jsons);
-        if (! $found) {
-            print "Unable to find parent reference ${item_stem} in ",
-                "${item_template}; you need to change it manually in ",
-                $out_jsons[2],".\n";
-        }
+        while ($not_done)
+        {
+            $prompt = "Name of item to create files for (e.g. fooblock): ";
+            @out_jsons = get_item_of_block_json($prompt, $ITEM_MODEL_PATH);
+            print "Source template: ", $item_template, "\n";
+            print "Target template: ", $out_jsons[2], "\n";
+            print "Replace texture ", $item_stem, " with ${MODID}:blocks/${out_jsons[1]}\n";
+            $found = copy_itemofblock_models($item_template, $item_stem, \@out_jsons);
+            if (! $found) {
+                print "Unable to find parent reference ${item_stem} in ",
+                    "${item_template}; you need to change it manually in ",
+                    $out_jsons[2],".\n";
+            }
+
+            $prompt = "Create more items from the same template [Y/N]? ";
+            $resp = get_response($prompt);
+            print $resp, "\n";
+            if ((length($resp) == 0) or (uc(substr($resp,0,1)) eq 'Y')) {
+                $not_done = 1;
+            }
+            else {
+                $not_done = 0;
+            }
+        } ## end while not_done
     }
     else {
         print "item_type ${item_type}  not yet implemented.\n";
@@ -324,7 +364,10 @@ sub copy_item_models
     
     while (my $line = <$fh>)
     {
-        if ($line =~ s/${item_stem}/${MODID}:${texture}/ ) {$found = 1};
+        if ($line =~ s/\"layer0\": \"items\/${item_stem}\"/\"layer0\": \"${MODID}:items\/${texture}\"/)
+        {
+            $found = 1;
+        }
         print $fh2 $line;
     } ## end-while
     close $fh;
