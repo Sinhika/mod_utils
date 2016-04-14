@@ -218,12 +218,16 @@ sub get_block_info
             copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
                             $out_model_stem);
                         
+            $prompt = "source texture stem to use (e.g. pumpkin): ";
+            $template_texture = get_response($prompt);
+
             $prompt = "Target texture stem to use (e.g. foo_gourd): ";
             $out_texture = get_response($prompt);
 
             # write model files 
             copy_model_with_variants($templ_model_stem, $out_model_stem, 
-                                     $out_texture, $models[1]);
+                                     $template_texture, $out_texture, 
+                                     $models[1]);
             
             # repeat?
             $not_done = check_repeat();
@@ -356,7 +360,7 @@ sub copy_models
 
 sub copy_model_with_variants
 {
-    my ($in_mstem, $out_mstem, $new_texture, $model_stem) = @_;
+    my ($in_mstem, $out_mstem, $old_texture, $new_texture, $model_stem) = @_;
     my ($in_model_path, $out_model_path, $out_model);
     my $texfound = 0;
 
@@ -375,7 +379,7 @@ sub copy_model_with_variants
     {
         $texfound = 1 if ($line =~ /"textures"/ );
         if ($texfound) {
-$line =~ s/^(\s*".*?":\s*")blocks\/${model_stem}/$1${MODID}:blocks\/${new_texture}/;
+$line =~ s/^(\s*".*?":\s*")blocks\/${old_texture}/$1${MODID}:blocks\/${new_texture}/;
         }
         print $fh2 $line;
     } ## end-while
