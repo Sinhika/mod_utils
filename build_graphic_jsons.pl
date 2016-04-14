@@ -78,7 +78,7 @@ while (! $block_or_item) {
 if ($block_or_item eq 'B')
 {
     print "Generic block (G;default), crop block (C), ",
-           "Face block [like pumpkin] (F), pillar block (P), ",
+           "Face block [like pumpkin] (F), pillar/log block (P), ",
            "Thin pane [like glass] (T), Special case (S) ? ";
     $resp = <STDIN>;
     $block_subtype = ($resp =~ /^[GCFPTS]/i) ? uc(substr($resp,0,1)) : 'G';
@@ -148,7 +148,7 @@ sub get_block_info
             get_template($prompt, $MC_BLOCKSTATE_PATH);
         while ($not_done)
         {
-            $prompt = "Name of block to create files for (e.g. copper_block): ";
+            $prompt = "Name of block to create files for (e.g. foo_block): ";
             @out_jsons = get_simple_item_json($prompt, $BLOCKSTATE_PATH);
             my @models = find_model_variants($template_json);
 
@@ -179,6 +179,53 @@ sub get_block_info
                 $not_done = 0;
             }
         } ## end while not_done 
+    }
+    elsif ($block_type eq 'F')  # 'face' block
+    {
+        $prompt = "Vanilla block to use as template (e.g. pumpkin): ";
+        ($block_stem, $template_json) =
+            get_template($prompt, $MC_BLOCKSTATE_PATH);
+        while ($not_done)
+        {
+            $prompt = "Name of block to create files for (e.g. foo_gourd): ";
+            @out_jsons = get_simple_item_json($prompt, $BLOCKSTATE_PATH);
+            my @models = find_facing_variants($template_json);
+
+            print "Source blockstate: ", $template_json, "\n";
+            for (my $i=0; ($i+2) <= $#models; $i += 3)
+            {
+                printf "Variant: %s, model: %s, y=%s\n", $models[$i],
+                        $models[$i+1], $models[$i+2];
+            }
+            print "Target blockstate: ", $out_jsons[1], "\n";
+
+            $prompt = "Source modelname stem to replace: ";
+            $templ_model_stem = get_response($prompt);
+            $prompt = "Target modelname stem to replace it with: ";
+            $out_model_stem = get_response($prompt);
+
+            # write blockstate file
+            copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
+                            $out_model_stem);
+                        
+            $prompt = "Target texture stem to use (e.g. foo_gourd): ";
+            $out_texture = get_response($prompt);
+            $out_texture = "${MODID}:${out_texture}";
+
+            # write model files 
+            copy_model_with_variants($templ_model_stem, $out_model_stem, 
+                                     $out_texture, $models[1]);
+            
+            # repeat?
+            $prompt = "Create more blocks from the same template [Y/N]? ";
+            $resp = get_response($prompt);
+            if ((length($resp) == 0) or (uc(substr($resp,0,1)) eq 'Y')) {
+                $not_done = 1;
+            }
+            else {
+                $not_done = 0;
+            }
+        } ## end while not_done
     }
     else {
         print "block_type ${block_type} not yet implemented.\n";
@@ -217,6 +264,40 @@ sub copy_models
         close $fh;
     } ## end-foreach
 } ## end copy_models()
+
+
+=item copy_model_with_variants
+
+=cut
+
+sub copy_model_with_variants
+{
+    my ($in_mstem, $out_mstem, $new_texture, $model_stem) = @_;
+    my ($in_model_path, $out_model_path, $out_model);
+    my $texfound = 0;
+
+    # for this type, there is one model file, but variant textures.
+    $in_model_path = File::Spec->catfile($MC_BLOCK_MODEL_PATH,
+                                            "${in_mstem}.json");
+    $out_model = $out_mstem . ".json";
+    $out_model_path = File::Spec->catfile($BLOCK_MODEL_PATH, $out_model);
+
+    open (my $fh, "<", $in_model_path) 
+        or die "Unable to open ${in_model_path}: $!";
+    open (my $fh2, ">", $out_model_path) 
+        or die "Unable to open ${out_model_path}: $!";
+
+    while (my $line = <$fh>)
+    {
+        $texfound = 1 if ($line =~ /"textures"/ );
+        if ($texfound) {
+            $line =~ s/^(\s*".*?":\s*"blocks\/)${model_stem}/$1${new_texture}/;
+        }
+        print $fh2 $line;
+    } ## end-while
+    close $fh2;
+    close $fh;
+} ## end copy_model_with_variants()
 
 
 =item copy_blockstate
@@ -463,6 +544,34 @@ sub find_model_variants
     } ## end-while
     close $fh;
     @variants = uniq @variants;
+    return @variants;
+} ## end find_model_variants()
+
+
+=item find_facing_variants
+
+returns a list of facing,model,other trios found in a blockstate json.
+
+=cut
+
+sub find_facing_variants
+{
+    my $bs_json = $_[0];
+    my @variants = ();
+
+    open (my $fh, "<", $bs_json) or die "Cannot open ${bs_json}: $!";
+    while (my $line = <$fh>)
+    {
+        if ($line =~ /"(.+?)":\s*{\s*"model":\s*"(.+?)"\s*},?\s*$/) 
+        {
+            push @variants, ($1, $2, 0);
+        }
+        elsif ($line =~ /"(.+?)":\s*{\s*"model":\s*"(.+?)",\s*"y":\s*(\d{2,3})\s*}/) 
+        {
+            push @variants, ($1, $2, $3);
+        }
+    } ## end-while
+    close $fh;
     return @variants;
 } ## end find_model_variants()
 
