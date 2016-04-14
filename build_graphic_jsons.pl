@@ -87,7 +87,7 @@ if ($block_or_item eq 'B')
 }
 else {
     print "Generic inventory item (G;default), item-of-block (B), bow (W),",
-        " armor set (A) ? ";
+        " armor set (A), tool set (T) ? ";
     $resp = <STDIN>;
     $item_subtype = ($resp =~ /^[GBAW]/i) ?  uc(substr($resp,0,1)) : 'G';
 }
@@ -133,8 +133,7 @@ sub get_response
 
 sub check_repeat
 {
-    my $prompt = "Create more from the same template [Y/N]? ";
-    my $resp = get_response($prompt);
+    my $resp = get_response($_[0]);
     if ((length($resp) == 0) or (uc(substr($resp,0,1)) eq 'Y')) {
         return 1;
     }
@@ -187,7 +186,8 @@ sub get_block_info
             copy_models($templ_model_stem, $out_model_stem, $out_texture, 
                          \@models);
 
-            $not_done = check_repeat();
+            $not_done = check_repeat(
+                        "Create another block from the same template [Y/N]? ");
         } ## end while not_done 
     }
     elsif ($block_type eq 'F')  # 'face' block
@@ -230,7 +230,8 @@ sub get_block_info
                                      $models[1]);
             
             # repeat?
-            $not_done = check_repeat();
+            $not_done = check_repeat(
+                        "Create another block from the same template [Y/N]? ");
         } ## end while not_done
     }
     elsif ($block_type eq 'P')   # pillar/log-type block
@@ -273,7 +274,8 @@ sub get_block_info
                                      \@models);
 
             # repeat?
-            $not_done = check_repeat();
+            $not_done = check_repeat(
+                "Create another block from the same template [Y/N]? ");
         } ## end while not_done
     }
     else {
@@ -441,7 +443,8 @@ sub get_item_info
                     $out_jsons[1],".\n";
             }
 
-            $not_done = check_repeat();
+            $not_done = check_repeat(
+                "Create another item from the same template [Y/N]? ");
         } ## end while not_done
     } ## end if 'G'
     elsif ($item_type eq 'B')  # item-of-block
@@ -463,11 +466,52 @@ sub get_item_info
                     $out_jsons[2],".\n";
             }
 
-            $not_done = check_repeat();
+            $not_done = check_repeat( 
+                "Create another item from the same template [Y/N]? ");
+        } ## end while not_done
+    }
+    elsif ($item_type eq 'W')  # boW
+    {
+        print "item_type ${item_type}  not yet implemented.\n";
+        return;
+      
+        # vanilla bow templates 
+        my @template_bows = ("bow", "bow_pulling_0", "bow_pulling_1", 
+                          "bow_pulling_2");
+        
+        while ($not_done)
+        {
+            $prompt = "Name of bow to create files for (e.g. foo_bow): ";
+            my $out_bow_stem = get_response($prompt);
+            foreach my $templ_bow (@template_bows)
+            { 
+                ($item_stem, $item_template) =
+                   ($templ_bow, 
+                    File::Spec->catfile($MC_ITEM_MODEL_PATH,
+                                         "${templ_bow}.json"));
+                $out_jsons[0] = $item_stem;
+                $out_jsons[0] =~ s/bow/${out_bow_stem}/;
+                $out_jsons[1] = File::Spec->catfile($ITEM_MODEL_PATH,
+                                                    "${out_jsons[0]}.json");
+
+                print "Source template: ", $item_template, "\n";
+                print "Target template: ", $out_jsons[1], "\n";
+                print "Replace texture ", $item_stem, " with ${MODID}:${out_jsons[0]}\n";
+                
+                $found = copy_item_models($item_template, $item_stem, 
+                                           \@out_jsons);
+                if (! $found) {
+                    print "Unable to find texture name ${item_stem} in ",
+                        "${item_template}; you need to change it manually in ",
+                        $out_jsons[1],".\n";
+                }
+            } 
+            $not_done = check_repeat( "Create another bow [Y/N]? ");
         } ## end while not_done
     }
     else {
         print "item_type ${item_type}  not yet implemented.\n";
+        return;
     }
 } ## end get_item_info()
 
