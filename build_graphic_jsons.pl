@@ -89,7 +89,7 @@ else {
     print "Generic inventory item (G;default), item-of-block (B), bow (W),",
         " armor set (A), tool set (T) ? ";
     $resp = <STDIN>;
-    $item_subtype = ($resp =~ /^[GBAW]/i) ?  uc(substr($resp,0,1)) : 'G';
+    $item_subtype = ($resp =~ /^[GBAWT]/i) ?  uc(substr($resp,0,1)) : 'G';
 }
 
 if ($verbose) {
@@ -472,8 +472,6 @@ sub get_item_info
     }
     elsif ($item_type eq 'W')  # boW
     {
-        print "item_type ${item_type}  not yet implemented.\n";
-        return;
       
         # vanilla bow templates 
         my @template_bows = ("bow", "bow_pulling_0", "bow_pulling_1", 
@@ -505,9 +503,80 @@ sub get_item_info
                         "${item_template}; you need to change it manually in ",
                         $out_jsons[1],".\n";
                 }
-            } 
+            } ## end foreach 
             $not_done = check_repeat( "Create another bow [Y/N]? ");
         } ## end while not_done
+    }
+    elsif ($item_type eq 'A') # armor sets
+    {
+        # vanilla metal armor templates (ignoring leather right now)
+        my @template_armor = ("iron_helmet", "iron_boots", "iron_chestplate",
+                              "iron_leggings" );
+
+        while ($not_done)
+        {
+            $prompt = "Armor material to create files for (e.g. fooite): ";
+            my $out_mat_stem = get_response($prompt);
+            foreach my $templ_armor (@template_armor)
+            { 
+                ($item_stem, $item_template) =
+                   ($templ_armor, 
+                    File::Spec->catfile($MC_ITEM_MODEL_PATH,
+                                         "${templ_armor}.json"));
+                $out_jsons[0] = $item_stem;
+                $out_jsons[0] =~ s/iron/${out_mat_stem}/;
+                $out_jsons[1] = File::Spec->catfile($ITEM_MODEL_PATH,
+                                                    "${out_jsons[0]}.json");
+
+                print "Source template: ", $item_template, "\n";
+                print "Target template: ", $out_jsons[1], "\n";
+                print "Replace texture ", $item_stem, " with ${MODID}:${out_jsons[0]}\n";
+                $found = copy_item_models($item_template, $item_stem, 
+                                           \@out_jsons);
+                if (! $found) {
+                    print "Unable to find texture name ${item_stem} in ",
+                        "${item_template}; you need to change it manually in ",
+                        $out_jsons[1],".\n";
+                }
+            }   
+            $not_done = check_repeat( "Create another armor set [Y/N]? ");
+        } ## end-while not_done
+    }
+    elsif ($item_type eq 'T') # tool sets
+    {
+        # vanilla metal tool set:
+        my @template_tools = (
+            "iron_axe", "iron_hoe", "iron_pickaxe", "iron_shovel", 
+            "iron_sword");
+        
+        while ($not_done)
+        {
+            $prompt = "Weapon material to create files for (e.g. fooite): ";
+            my $out_mat_stem = get_response($prompt);
+            foreach my $templ_tool (@template_tools)
+            { 
+                ($item_stem, $item_template) =
+                   ($templ_tool, 
+                    File::Spec->catfile($MC_ITEM_MODEL_PATH,
+                                         "${templ_tool}.json"));
+                $out_jsons[0] = $item_stem;
+                $out_jsons[0] =~ s/iron/${out_mat_stem}/;
+                $out_jsons[1] = File::Spec->catfile($ITEM_MODEL_PATH,
+                                                    "${out_jsons[0]}.json");
+
+                print "Source template: ", $item_template, "\n";
+                print "Target template: ", $out_jsons[1], "\n";
+                print "Replace texture ", $item_stem, " with ${MODID}:${out_jsons[0]}\n";
+                $found = copy_item_models($item_template, $item_stem, 
+                                           \@out_jsons);
+                if (! $found) {
+                    print "Unable to find texture name ${item_stem} in ",
+                        "${item_template}; you need to change it manually in ",
+                        $out_jsons[1],".\n";
+                }
+            }   
+            $not_done = check_repeat( "Create another tool set [Y/N]? ");
+        } ## end-while not_done
     }
     else {
         print "item_type ${item_type}  not yet implemented.\n";
@@ -561,7 +630,8 @@ sub copy_item_models
     
     while (my $line = <$fh>)
     {
-        if ($line =~ s/\"layer0\": \"items\/${item_stem}\"/\"layer0\": \"${MODID}:items\/${texture}\"/)
+        if ($line =~ 
+  s/\"layer0\": \"items\/${item_stem}/\"layer0\": \"${MODID}:items\/${texture}/)
         {
             $found = 1;
         }
