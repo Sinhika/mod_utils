@@ -35,7 +35,7 @@ use List::MoreUtils qw(uniq);
 # constants to be re-defined when necessary
 # where are the vamilla assets?
 my $MC_ASSETS = File::Spec->catdir($ENV{HOME},
-                        "/Projects/Minecraft_1.8/vanilla/assets/minecraft");
+                        "/Projects/Minecraft_1.9/vanilla/assets/minecraft");
 my $MC_BLOCKSTATE_PATH = "${MC_ASSETS}/blockstates";
 my $MC_BLOCK_MODEL_PATH = "${MC_ASSETS}/models/block";
 my $MC_ITEM_MODEL_PATH = "${MC_ASSETS}/models/item";
@@ -160,35 +160,54 @@ sub get_block_info
 
     if ($block_type eq 'G' or $block_type eq 'C')  # generic or crop block
     {
-        $prompt = "Vanilla block to use as template (e.g. cobblestone): ";
-        ($block_stem, $template_json) =
-            get_template($prompt, $MC_BLOCKSTATE_PATH);
-        while ($not_done)
+        $prompt = "Is this a simple cube-type block [Y/N]? ";
+        # write Forge-type blockstate for cube_all...
+        if (check_repeat($prompt)) 
         {
-            $prompt = "Name of block to create files for (e.g. foo_block): ";
-            @out_jsons = get_simple_item_json($prompt, $BLOCKSTATE_PATH);
-            my @models = find_model_variants($template_json);
+            while ($not_done)
+            {
+                $prompt = "Name of block to create files for (e.g. foo_block): ";
+                @out_jsons = get_simple_item_json($prompt, $BLOCKSTATE_PATH);
+                $prompt = "Target texture to use: ";
+                $out_texture = get_response($prompt);
+                ## TODO
+                write_cubeall_blockstate($out_jsons[1], $out_texture);
+                $not_done = check_repeat(
+                            "Create another simple cube [Y/N]? ");
+            } ## end while not_done 
+        }
+        else 
+        {
+            $prompt = "Vanilla block to use as template (e.g. cobblestone): ";
+            ($block_stem, $template_json) =
+                get_template($prompt, $MC_BLOCKSTATE_PATH);
+            while ($not_done)
+            {
+                $prompt = "Name of block to create files for (e.g. foo_block): ";
+                @out_jsons = get_simple_item_json($prompt, $BLOCKSTATE_PATH);
+                my @models = find_model_variants($template_json);
 
-            print "Source blockstate: ", $template_json, "\n";
-            print " models to copy: ";
-            map {print "\t${_}\n" } @models;
-            print "Target blockstate: ", $out_jsons[1], "\n";
-            $prompt = "Source modelname stem to replace: ";
-            $templ_model_stem = get_response($prompt);
-            $prompt = "Target modelname stem to replace it with: ";
-            $out_model_stem = get_response($prompt);
-            $prompt = "Target texture to use: ";
-            $out_texture = get_response($prompt);
+                print "Source blockstate: ", $template_json, "\n";
+                print " models to copy: ";
+                map {print "\t${_}\n" } @models;
+                print "Target blockstate: ", $out_jsons[1], "\n";
+                $prompt = "Source modelname stem to replace: ";
+                $templ_model_stem = get_response($prompt);
+                $prompt = "Target modelname stem to replace it with: ";
+                $out_model_stem = get_response($prompt);
+                $prompt = "Target texture to use: ";
+                $out_texture = get_response($prompt);
 
-            copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
-                            $out_model_stem);
-                        
-            copy_models($templ_model_stem, $out_model_stem, $out_texture, 
-                         \@models);
+                copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
+                                $out_model_stem);
+                            
+                copy_models($templ_model_stem, $out_model_stem, $out_texture, 
+                            \@models);
 
-            $not_done = check_repeat(
-                        "Create another block from the same template [Y/N]? ");
-        } ## end while not_done 
+                $not_done = check_repeat(
+                            "Create another block from the same template [Y/N]? ");
+            } ## end while not_done 
+        } ## end-else not a simple cube
     }
     elsif ($block_type eq 'F')  # 'face' block
     {
@@ -407,6 +426,30 @@ sub copy_blockstate
     close $fh;
     close $fh2;
 } ## end copy_blockstate()
+
+
+=item write_cubeall_blockstate
+
+write a standard Forge blockstate for a stock cube_all model block.
+
+=cut
+
+sub write_cubeall_blockstate
+{
+    my ($out_json, $texture) = @_;
+    open (my $fh, ">", $out_json) or die "Unable to open ${out_json}: $!";
+    print $fh "{\n";
+    print $fh "\t\"forge_marker\" : 1,\n";
+    print $fh "\t\"defaults\": {\n";
+    print $fh "\t\t\"textures\": { \"all\": \"${texture}\" }\n";
+    print $fh "\t},\n";
+    print $fh "\t\"variants\": {\n";
+    print $fh "\t\t\"normal\": { \"model\" : \"cube_all\" },\n";
+    print $fh "\t\t\"inventory\": { \"model\" : \"cube_all\" }\n";
+    print $fh "\t}\n";
+    print $fh "}";
+    close $fh;
+} ## end write_cubeall_blockstate()
 
 
 =item get_item_info
