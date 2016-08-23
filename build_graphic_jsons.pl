@@ -749,7 +749,7 @@ sub copy_item_models
             $found = 1;
         }
         elsif ($line =~
-  s/\"layer0\" \"blocks\/${item_stem}/\"layer0\" \"${MODID}:blocks\/${texture}/)
+  s/\"layer0\": \"blocks\/${item_stem}/\"layer0\": \"${MODID}:blocks\/${texture}/)
         {
             $found = 1;
         }
