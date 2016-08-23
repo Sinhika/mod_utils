@@ -35,7 +35,7 @@ use List::MoreUtils qw(uniq);
 # constants to be re-defined when necessary
 # where are the vamilla assets?
 my $MC_ASSETS = File::Spec->catdir($ENV{HOME},
-                        "/Projects/Minecraft_1.9/vanilla/assets/minecraft");
+                        "/Projects/Minecraft_1.10/vanilla/assets/minecraft");
 my $MC_BLOCKSTATE_PATH = "${MC_ASSETS}/blockstates";
 my $MC_BLOCK_MODEL_PATH = "${MC_ASSETS}/models/block";
 my $MC_ITEM_MODEL_PATH = "${MC_ASSETS}/models/item";
@@ -81,9 +81,10 @@ if ($block_or_item eq 'B')
 {
     print "Generic block (G;default), crop block (C), ",
            "Face block [like pumpkin] (F), pillar/log block (P), ",
+           "Bars [like iron_bars] (B), ",
            "Thin pane [like glass] (T), Special case (S) ? ";
     $resp = <STDIN>;
-    $block_subtype = ($resp =~ /^[GCFPTS]/i) ? uc(substr($resp,0,1)) : 'G';
+    $block_subtype = ($resp =~ /^[GCFPBTS]/i) ? uc(substr($resp,0,1)) : 'G';
 }
 else {
     print "Generic inventory item (G;default), item-of-block (B), bow (W),",
@@ -252,7 +253,7 @@ sub get_block_info
             $not_done = check_repeat(
                         "Create another block from the same template [Y/N]? ");
         } ## end while not_done
-    }
+    } ## end-elsif 'face' block
     elsif ($block_type eq 'P')   # pillar/log-type block
     {
         $prompt = "Vanilla block to use as template (e.g. acacia_log): ";
@@ -296,12 +297,81 @@ sub get_block_info
             $not_done = check_repeat(
                 "Create another block from the same template [Y/N]? ");
         } ## end while not_done
-    }
+    } ## end-elsif pillars
+    elsif ($block_type eq 'B')
+    {
+        # there is only one template for bars...
+        $block_stem = "iron_bars";
+        $template_json = File::Spec->catfile($MC_BLOCKSTATE_PATH, $block_stem);
+        $template_json .= ".json";
+        while ($not_done)
+        {
+            $prompt = "Name of block to create files for (e.g. foo_bars): ";
+            @out_jsons = get_simple_item_json($prompt, $BLOCKSTATE_PATH);
+            my $out_stem = $out_jsons[0];
+            my $block_json = $out_jsons[1];
+
+            # write blockstate file
+            copy_blockstate($template_json,'iron_bars',$block_json, $out_stem);
+
+            $template_texture = 'iron_bars';
+            $prompt = "Target texture stem to use (e.g. foo_bars): ";
+            $out_texture = get_response($prompt);
+                 
+            my @models = ("${out_stem}_post_ends", "${out_stem}_post",
+                    "${out_stem}_cap", "${out_stem}_cap_alt", 
+                    "${out_stem}_side", "${out_stem}_side_alt");
+            copy_multiple_models($out_texture, \@models);
+            # repeat?
+            $not_done = check_repeat(
+                "Create another block from the same template [Y/N]? ");
+        } ## end while not_done
+        
+    } ## end-elsif bars
     else {
         print "block_type ${block_type} not yet implemented.\n";
 
     }
 } ## end-get_block_info
+
+
+=item copy_multiple_models
+
+=cut
+
+sub copy_multiple_models
+{
+    my $new_texture = $_[0];
+    my $models_ref = $_[1];
+    my $old_texture = 'blocks/iron_bars';
+
+    my @src_models = ("iron_bars_post_ends", "iron_bars_post",
+        "iron_bars_cap", "iron_bars_cap_alt", "iron_bars_side",
+        "iron_bars_side_alt");
+
+    my ($in_model_path, $out_model_path, $out_model);
+    for (my $ii=0; $ii < scalar(@$models_ref); $ii++)
+    {
+        my $tmpl_model = $src_models[$ii];
+        $in_model_path = File::Spec->catfile($MC_BLOCK_MODEL_PATH,
+                                             "${tmpl_model}.json");
+        my $out_model = $$models_ref[$ii] . '.json';
+        $out_model_path = File::Spec->catfile($BLOCK_MODEL_PATH, $out_model);
+
+        open (my $fh, "<", $in_model_path) 
+            or die "Unable to open ${in_model_path}: $!";
+        open (my $fh2, ">", $out_model_path) 
+            or die "Unable to open ${out_model_path}: $!";
+        while (my $line = <$fh>)
+        {
+            $line =~ s/${old_texture}/${MODID}:blocks\/${new_texture}/;
+            print $fh2 $line;
+        } ## end-while
+        close $fh2;
+        close $fh;
+    } ## end-for
+
+} ## end sub 
 
 
 =item copy_more_models_with_var
