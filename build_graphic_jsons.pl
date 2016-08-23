@@ -748,6 +748,11 @@ sub copy_item_models
         {
             $found = 1;
         }
+        elsif ($line =~
+  s/\"layer0\" \"blocks\/${item_stem}/\"layer0\" \"${MODID}:blocks\/${texture}/)
+        {
+            $found = 1;
+        }
         print $fh2 $line;
     } ## end-while
     close $fh;
