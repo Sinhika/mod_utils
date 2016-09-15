@@ -82,7 +82,7 @@ if ($block_or_item eq 'B')
     print "Generic block (G;default), crop block (C), ",
            "Face block [like pumpkin] (F), pillar/log block (P), ",
            "Bars [like iron_bars] (B), ",
-           "Thin pane [like glass] (T), Special case (S) ? ";
+           "Thin pane [like glass] (T), Stairs (S) ? ";
     $resp = <STDIN>;
     $block_subtype = ($resp =~ /^[GCFPBTS]/i) ? uc(substr($resp,0,1)) : 'G';
 }
@@ -289,7 +289,7 @@ sub get_block_info
             $out_texture = get_response($prompt);
 
             # write model files 
-            copy_more_models_with_var($templ_model_stem, $out_model_stem, 
+            copy_more_models_with_facings($templ_model_stem, $out_model_stem, 
                                      $template_texture, $out_texture, 
                                      \@models);
 
@@ -321,13 +321,47 @@ sub get_block_info
             my @models = ("${out_stem}_post_ends", "${out_stem}_post",
                     "${out_stem}_cap", "${out_stem}_cap_alt", 
                     "${out_stem}_side", "${out_stem}_side_alt");
-            copy_multiple_models($out_texture, \@models);
+            copy_bars_models($out_texture, \@models);
             # repeat?
             $not_done = check_repeat(
                 "Create another block from the same template [Y/N]? ");
         } ## end while not_done
         
     } ## end-elsif bars
+    elsif ($block_type eq 'S')
+    {
+        # there is only one template for stairs
+        $block_stem = "oak_stairs";
+        $template_json = File::Spec->catfile($MC_BLOCKSTATE_PATH, $block_stem);
+        $template_json .= ".json";
+        while ($not_done)
+        {
+            $prompt = "Name of block to create files for (e.g. foo_stairs): ";
+            @out_jsons = get_simple_item_json($prompt, $BLOCKSTATE_PATH);
+            my @models = find_model_variants($template_json);
+            print "Source blockstate: ", $template_json, "\n";
+            print " models to copy: ";
+            map {print "\t${_}\n" } @models;
+            print "Target blockstate: ", $out_jsons[1], "\n";
+            $templ_model_stem = "oak";
+            print "Source modelname stem to replace: ${templ_model_stem}\n";
+            $prompt = "Target modelname stem to replace it with: ";
+            $out_model_stem = get_response($prompt);
+            $prompt = "Target texture to use: ";
+            $out_texture = get_response($prompt);
+
+            copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
+                            $out_model_stem);
+            #copy_models($templ_model_stem, $out_model_stem, $out_texture, 
+                            #\@models);
+            copy_more_models_with_variants($templ_model_stem, $out_model_stem,
+                "planks_oak", $out_texture, \@models);
+            # repeat?
+            $not_done = check_repeat(
+                "Create another block from the same template [Y/N]? ");
+        } ## end while not_done
+
+    } ## end-elsif stairs
     else {
         print "block_type ${block_type} not yet implemented.\n";
 
@@ -335,11 +369,11 @@ sub get_block_info
 } ## end-get_block_info
 
 
-=item copy_multiple_models
+=item copy_bars_models
 
 =cut
 
-sub copy_multiple_models
+sub copy_bars_models
 {
     my $new_texture = $_[0];
     my $models_ref = $_[1];
@@ -374,11 +408,11 @@ sub copy_multiple_models
 } ## end sub 
 
 
-=item copy_more_models_with_var
+=item copy_more_models_with_facings
 
 =cut
 
-sub copy_more_models_with_var
+sub copy_more_models_with_facings
 {
     my ($in_mstem, $out_mstem, $old_texture, $new_texture, $model_list) = @_;
     my ($in_model_path, $out_model_path, $out_model);
@@ -412,7 +446,10 @@ sub copy_more_models_with_var
     } ## end-foreach
 } ## end ()
 
+
 =item copy_models
+
+copy one or more simple models that have one texture.
 
 =cut
 
@@ -445,7 +482,46 @@ sub copy_models
 } ## end copy_models()
 
 
+=item copy_more_models_with_variants
+
+copy one or more complex models that have multiple texture variants.
+
+=cut
+
+sub copy_more_models_with_variants
+{
+    my ($in_mstem, $out_mstem, $old_texture, $new_texture, $model_list) = @_;
+    my ($in_model_path, $out_model_path, $out_model);
+    my $texfound = 0;
+
+    foreach my $model (@$model_list)
+    {
+        $in_model_path = File::Spec->catfile($MC_BLOCK_MODEL_PATH,
+                                             "${model}.json");
+        $model =~ s/${in_mstem}/${out_mstem}/;
+        $out_model = $model . ".json";
+        $out_model_path = File::Spec->catfile($BLOCK_MODEL_PATH, $out_model);
+        open (my $fh, "<", $in_model_path) 
+            or die "Unable to open ${in_model_path}: $!";
+        open (my $fh2, ">", $out_model_path) 
+            or die "Unable to open ${out_model_path}: $!";
+        while (my $line = <$fh>)
+        {
+            $texfound = 1 if ($line =~ /"textures"/ );
+            if ($texfound) {
+                $line =~ s/^(\s*".*?":\s*")blocks\/${old_texture}/$1${MODID}:blocks\/${new_texture}/;
+            }
+        print $fh2 $line;
+        } ## end-while
+        close $fh2;
+        close $fh;
+    } ## end-foreach
+} ## end sub copy_more_models_with_variants()
+
+
 =item copy_model_with_variants
+
+copy one complex model that has multiple texture variants.
 
 =cut
 
