@@ -81,10 +81,10 @@ if ($block_or_item eq 'B')
 {
     print "Generic block (G;default), crop block (C), ",
            "Face block [like pumpkin] (F), pillar/log block (P), ",
-           "Bars [like iron_bars] (B), ",
+           "Bars [like iron_bars] (B), Doors (D), ", 
            "Thin pane [like glass] (T), Stairs (S) ? ";
     $resp = <STDIN>;
-    $block_subtype = ($resp =~ /^[GCFPBTS]/i) ? uc(substr($resp,0,1)) : 'G';
+    $block_subtype = ($resp =~ /^[GCFPBTSD]/i) ? uc(substr($resp,0,1)) : 'G';
 }
 else {
     print "Generic inventory item (G;default), item-of-block (B), bow (W),",
@@ -362,6 +362,37 @@ sub get_block_info
         } ## end while not_done
 
     } ## end-elsif stairs
+    elsif ($block_type eq 'D')
+    {
+        # there is only one template for doors
+        $block_stem = "wooden_door";
+        $template_json = File::Spec->catfile($MC_BLOCKSTATE_PATH, $block_stem);
+        $template_json .= ".json";
+        while ($not_done)
+        {
+            $prompt = "Name of block to create files for (e.g. foo_door): ";
+            @out_jsons = get_simple_item_json($prompt, $BLOCKSTATE_PATH);
+            my @models = find_model_variants($template_json);
+            print "Source blockstate: ", $template_json, "\n";
+            print " models to copy: ";
+            map {print "\t${_}\n" } @models;
+            print "Target blockstate: ", $out_jsons[1], "\n";
+            $templ_model_stem = "wooden";
+            print "Source modelname stem to replace: ${templ_model_stem}\n";
+            $prompt = "Target modelname stem to replace it with: ";
+            $out_model_stem = get_response($prompt);
+            $prompt = "Target texture to use: ";
+            $out_texture = get_response($prompt);
+
+            copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
+                            $out_model_stem);
+            copy_more_models_with_variants($templ_model_stem, $out_model_stem,
+                "door_wood", $out_texture, \@models);
+            # repeat?
+            $not_done = check_repeat(
+                "Create another block from the same template [Y/N]? ");
+        } ## end while not_done
+    }
     else {
         print "block_type ${block_type} not yet implemented.\n";
 
