@@ -644,7 +644,7 @@ sub write_stair_item_model
     my ($out_json, $parent ) = @_;
     open (my $fh, ">", $out_json) or die "Unable to open ${out_json}: $!";
     print $fh "{\n";
-    print $fh "\t\"parent\": \"block/${MODID}:${parent}\"\n";
+    print $fh "\t\"parent\": \"${MODID}:block/${parent}\"\n";
     print $fh "}";
     close $fh;
 
