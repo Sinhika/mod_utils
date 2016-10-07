@@ -87,10 +87,11 @@ if ($block_or_item eq 'B')
     $block_subtype = ($resp =~ /^[GCFPBTSD]/i) ? uc(substr($resp,0,1)) : 'G';
 }
 else {
-    print "Generic inventory item (G;default), item-of-block (B), bow (W),",
-        " armor set (A), tool set (T) ? ";
+    print "Generic inventory item (G;default), simple item (S), ",
+        "item-of-block (B), bow (W), armor set (A), tool set (T),",
+        " Stair Item because I screwed up (Q) ? ";
     $resp = <STDIN>;
-    $item_subtype = ($resp =~ /^[GBAWT]/i) ?  uc(substr($resp,0,1)) : 'G';
+    $item_subtype = ($resp =~ /^[GBAWTSQ]/i) ?  uc(substr($resp,0,1)) : 'G';
 }
 
 if ($verbose) {
@@ -352,10 +353,13 @@ sub get_block_info
 
             copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
                             $out_model_stem);
-            #copy_models($templ_model_stem, $out_model_stem, $out_texture, 
-                            #\@models);
             copy_more_models_with_variants($templ_model_stem, $out_model_stem,
                 "planks_oak", $out_texture, \@models);
+            # make the really simple item file for it...
+            my $item_json = 
+                File::Spec->catfile($ITEM_MODEL_PATH, $out_jsons[0]);
+            $item_json .= '.json';
+            write_stair_item_model($item_json, $out_jsons[0]);
             # repeat?
             $not_done = check_repeat(
                 "Create another block from the same template [Y/N]? ");
@@ -629,6 +633,24 @@ sub write_cubeall_blockstate
 } ## end write_cubeall_blockstate()
 
 
+=item write_stair_item_model
+
+write the simple item model file required for stairs.
+
+=cut
+
+sub write_stair_item_model
+{
+    my ($out_json, $parent ) = @_;
+    open (my $fh, ">", $out_json) or die "Unable to open ${out_json}: $!";
+    print $fh "{\n";
+    print $fh "\t\"parent\": \"block/${MODID}:${parent}\"\n";
+    print $fh "}";
+    close $fh;
+
+} ## end write_stair_item_model()
+
+
 =item get_item_info
 
 =cut
@@ -667,6 +689,31 @@ sub get_item_info
                 "Create another item from the same template [Y/N]? ");
         } ## end while not_done
     } ## end if 'G'
+    elsif ($item_type eq 'S') # simple item, just fill in texture.
+    {
+        $item_stem = "apple";
+        $item_template = File::Spec->catfile($MC_ITEM_MODEL_PATH, $item_stem);
+        $item_template .= '.json';
+        while ($not_done)
+        {
+            $prompt = "Name of item to create files for (e.g. foo_seeds): ";
+            @out_jsons = get_simple_item_json($prompt, $ITEM_MODEL_PATH);
+            print "Source template: ", $item_template, "\n";
+            print "Target template: ", $out_jsons[1], "\n";
+            $prompt = "Texture of item (e.g. green_foo_dots): ";
+            $out_jsons[0] = get_response($prompt);
+            print "Replace texture ", $item_stem, " with ${MODID}:${out_jsons[0]}\n";
+            $found = copy_item_models($item_template, $item_stem, \@out_jsons);
+            if (! $found) {
+                print "Unable to find texture name ${item_stem} in ",
+                    "${item_template}; you need to change it manually in ",
+                    $out_jsons[1],".\n";
+            }
+
+            $not_done = check_repeat(
+                "Create another item from the same template [Y/N]? ");
+        } ## end while not_done
+    }
     elsif ($item_type eq 'B')  # item-of-block
     {
         $prompt = "Vanilla item-of-block to use as template (e.g. iron_block): ";
@@ -798,6 +845,18 @@ sub get_item_info
             $not_done = check_repeat( "Create another tool set [Y/N]? ");
         } ## end-while not_done
     }
+    elsif ($item_type eq 'Q')  # screwed up and forgot to create stair items
+    {
+        while ($not_done)
+        {
+            $prompt = "stair to create item for? ";
+            my $stair_block = get_response($prompt);
+            my $out_json = File::Spec->catfile($ITEM_MODEL_PATH, $stair_block);
+            $out_json .= '.json';
+            write_stair_item_model($out_json, $stair_block);
+            $not_done = check_repeat( "Create another tool set [Y/N]? ");
+        } ## end-while not_done
+    } ## end-elsif Q
     else {
         print "item_type ${item_type}  not yet implemented.\n";
         return;
