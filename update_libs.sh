@@ -5,7 +5,12 @@ TOPDIR=${HOME}/Projects/Minecraft_1.10
 DEVLIB=${TOPDIR}/devlibs
 DEOBFLIST="SimpleCore SimpleOres2 Fusion Netherrocks"
 NEEDSLIBLIST="SimpleOres2 Fusion Netherrocks Aesthetics"
-
+IS_CYGWIN=1
+if [ $IS_CYGWIN == 1 ]; then
+    COPYCMD="cp -v"
+else
+    COPYCMD="ln -v -s"
+fi
 if [ ! -d ${DEVLIB} ]; then
     mkdir -p ${DEVLIB}
 fi
@@ -33,20 +38,20 @@ for D in ${DEOBFLIST}; do
 done
 cd ${TOPDIR}/SimpleOres2/libs
 rm -f *.jar
-ln -v -s ${DEVLIB}/simplecore-*.jar
+${COPYCMD} ${DEVLIB}/simplecore-*.jar .
 
 cd ${TOPDIR}/Fusion/libs
 rm -f *.jar
-ln -v -s ${DEVLIB}/simplecore-*.jar .
-ln -v -s ${DEVLIB}/simpleores-*.jar .
+${COPYCMD} ${DEVLIB}/simplecore-*.jar .
+${COPYCMD} ${DEVLIB}/simpleores-*.jar .
 
 cd ${TOPDIR}/Netherrocks/libs
 rm -r *.jar
-ln -v -s ${DEVLIB}/simplecore-*.jar .
+${COPYCMD} ${DEVLIB}/simplecore-*.jar .
 
 cd ${TOPDIR}/Aesthetics/libs
 rm -f *.jar
-ln -v -s ${DEVLIB}/simplecore-*.jar .
-ln -v -s ${DEVLIB}/simpleores-*.jar .
-ln -v -s ${DEVLIB}/fusion-*.jar .
-ln -v -s ${DEVLIB}/netherrocks-*.jar .
+${COPYCMD} ${DEVLIB}/simplecore-*.jar .
+${COPYCMD} ${DEVLIB}/simpleores-*.jar .
+${COPYCMD} ${DEVLIB}/fusion-*.jar .
+${COPYCMD} ${DEVLIB}/netherrocks-*.jar .
