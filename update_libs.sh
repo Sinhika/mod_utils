@@ -34,7 +34,7 @@ done
 cd ${TOPDIR}/SimpleOres2/libs
 rm -f *.jar
 ln -v -s ${DEVLIB}/simplecore-*.jar
-exit
+
 cd ${TOPDIR}/Fusion/libs
 rm -f *.jar
 ln -v -s ${DEVLIB}/simplecore-*.jar .
