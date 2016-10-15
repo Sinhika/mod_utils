@@ -370,6 +370,8 @@ sub get_block_info
     {
         # there is only one template for doors
         $block_stem = "wooden_door";
+        $prompt = "Powered door (like iron_door)? (Y/n) ";
+        my $is_powered = uc(get_response($prompt)) eq 'Y';
         $template_json = File::Spec->catfile($MC_BLOCKSTATE_PATH, $block_stem);
         $template_json .= ".json";
         while ($not_done)
@@ -389,7 +391,7 @@ sub get_block_info
             $out_texture = get_response($prompt);
 
             copy_blockstate($template_json, $templ_model_stem, $out_jsons[1],
-                            $out_model_stem);
+                            $out_model_stem, $is_powered);
             copy_more_models_with_variants($templ_model_stem, $out_model_stem,
                 "door_wood", $out_texture, \@models);
             # repeat?
@@ -596,12 +598,16 @@ $line =~ s/^(\s*".*?":\s*")blocks\/${old_texture}/$1${MODID}:blocks\/${new_textu
 
 sub copy_blockstate
 {
-    my ($in_json, $in_mstem, $out_json, $out_mstem) = @_;
+    my ($in_json, $in_mstem, $out_json, $out_mstem, $is_powered) = @_;
     open (my $fh, "<", $in_json) or die "Unable to open ${in_json}: $!";
     open (my $fh2, ">", $out_json) or die "Unable to open ${out_json}: $!";
     while (my $line = <$fh>)
     {
         $line =~ s/$in_mstem/$MODID:$out_mstem/;
+        if ($is_powered) {
+            $line =~ s/(open=false)/$1,powered=false/;
+            $line =~ s/(open=true)/$1,powered=true/;
+        }
         print $fh2 $line;
     }
     close $fh;
