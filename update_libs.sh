@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 set +f
 
-TOPDIR=${HOME}/Projects/Minecraft_1.10
+TOPDIR=${HOME}/Projects/Minecraft_1.11
 DEVLIB=${TOPDIR}/devlibs
 DEOBFLIST="SimpleCore SimpleOres2 Fusion Netherrocks"
 NEEDSLIBLIST="SimpleOres2 Fusion Netherrocks Aesthetics"
