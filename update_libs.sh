@@ -40,12 +40,8 @@ ln -v -s ${DEVLIB}/simpleores-*.jar .
 ln -v -s ${DEVLIB}/fusion-*.jar .
 ln -v -s ${DEVLIB}/netherrocks-*.jar .
 
-exit
-
-cd ${TOPDIR}/akkamaddiAdditions2/libs
+cd ${TOPDIR}/hadite/libs
 rm -f *.jar
 ln -v -s ${DEVLIB}/simplecore-*.jar .
 ln -v -s ${DEVLIB}/simpleores-*.jar .
 ln -v -s ${DEVLIB}/fusion-*.jar .
-
-
