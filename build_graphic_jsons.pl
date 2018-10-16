@@ -35,7 +35,7 @@ use List::MoreUtils qw(uniq);
 # constants to be re-defined when necessary
 # where are the vamilla assets?
 my $MC_ASSETS = File::Spec->catdir($ENV{HOME},
-                        "/Projects/Minecraft_1.10/vanilla/assets/minecraft");
+                        "/Projects/Minecraft_1.12/vanilla/assets/minecraft");
 my $MC_BLOCKSTATE_PATH = "${MC_ASSETS}/blockstates";
 my $MC_BLOCK_MODEL_PATH = "${MC_ASSETS}/models/block";
 my $MC_ITEM_MODEL_PATH = "${MC_ASSETS}/models/item";
