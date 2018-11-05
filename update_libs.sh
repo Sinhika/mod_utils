@@ -3,7 +3,7 @@
 TOPDIR=${HOME}/Projects/Minecraft_1.12
 DEVLIB=${TOPDIR}/devlibs
 DEVLIB110=$DEVLIB
-DEOBFLIST="SimpleCore SimpleOres2 Fusion Machines Netherrocks"
+DEOBFLIST="SimpleCore SimpleOres2 Fusion Machines Netherrocks Aesthetics"
 
 echo "Cleaning existing 1.12 libs..."
 cd ${DEVLIB}
@@ -45,3 +45,5 @@ rm -f *.jar
 ln -v -s ${DEVLIB}/simplecore-*.jar .
 ln -v -s ${DEVLIB}/simpleores-*.jar .
 ln -v -s ${DEVLIB}/fusion-*.jar .
+ln -v -s ${DEVLIB}/machines-*.jar .
+ln -v -s ${DEVLIB}/aesthetics-*.jar .
