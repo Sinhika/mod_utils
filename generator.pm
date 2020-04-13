@@ -13,8 +13,9 @@ use generator;
 
 =cut
 
-package generator
-require Exporter
+package generator;
+
+require Exporter;
 
 use strict;
 use warnings;
@@ -22,7 +23,7 @@ use warnings;
 our @ISA = qw( Exporter );
 
 our @EXPORT = qw( 
-    get_response check_repeat get_simple_json_path
+    get_response check_repeat get_simple_json_path get_template
     $MC_ASSETS $MC_BLOCKSTATE_PATH $MC_BLOCK_MODEL_PATH $MC_ITEM_MODEL_PATH
 );
 
@@ -42,7 +43,11 @@ our $MC_ITEM_MODEL_PATH = "${MC_ASSETS}/models/item";
 
 =over
 
-=item get_response
+=item B<get_response>
+
+Print a prompt, read response from STDIN.
+
+Returns: response, stripped of EOL.
 
 =cut
 
@@ -57,7 +62,11 @@ sub get_response
     return $resp; 
 }
 
-=item check_repeat
+=item B<check_repeat>
+
+Print prompt and check response for 'Yes'-like answer.
+
+Returns: 1 on yes, 0 on not-yes
 
 =cut
 
@@ -73,9 +82,9 @@ sub check_repeat
 } ## end check_repeat()
 
 
-=item get_simple_json_path
+=item B<get_simple_json_path>
 
-Just get the thing's name and make a .json file.
+Just get the thing's name and make a .json pathname.
 
 Returns: list of (name, full path to json).
 
@@ -93,6 +102,58 @@ sub get_simple_json_path
     $json .= '.json';
     return ($resp, $json,);
 } ## end get_simple_item_json()
+
+
+=item B<get_template>
+ 
+ $template = get_template($stem, $mc_path);
+
+given the filename stem, assemble a pathname to the template json
+and check that it exists.
+
+Returns: full path to template json, or undef if not readable.
+
+=cut
+
+sub get_template
+{
+    my ($stem, $mc_path) = @_;
+    my $template = File::Spec->catfile($mc_path, $stem);
+    if ($template !~ /\.json$/) {
+        $template .= '.json';
+    }
+    if ( ! -r $template ) {
+        warn "${template} does not exist or is not readable!\n";
+        $template = undef;
+    }
+    return $template;
+} ## end sub get_template
+
+=item B<get_template_prompt>
+
+    $template = get_template($prompt, $mc_path);
+
+Prompt for an item or block template.
+
+Returns: list of ($stem, $template).
+
+=cut
+    
+sub get_template_prompt
+{
+    my $prompt = $_[0];
+    my $mc_path = $_[1];
+    my $template = undef;
+    my $stem;
+
+    while (not defined $template) 
+    {
+        $stem = get_response($prompt);
+        $template = get_template($stem, $mc_path);
+    } ## end-while
+    return ($stem, $template);
+} ## end get_template_prompt()
+
 
 ############ MANDATORY 1 ############
 1;
