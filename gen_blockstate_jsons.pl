@@ -72,9 +72,9 @@ while ($not_done)
         "crop block [has growth stages] (C), ",
         "Simple block with facing [like oak_log] (F), ",
         "Bars [like iron_bars] (B), Doors (D), ", 
-        "Thin pane [like glass] (T), Stairs (S) ? ";
+        "Thin pane [like glass] (T), Stairs (S), Other (O) ? ";
     $resp = <STDIN>;
-    $block_subtype = ($resp =~ /^[GCFBTSD]/i) ? uc(substr($resp,0,1)) : 'G';
+    $block_subtype = ($resp =~ /^[GCFBTSDO]/i) ? uc(substr($resp,0,1)) : 'G';
 
     if ($verbose) {
         print "\$block_subtype = ", $block_subtype, "\n";
@@ -121,11 +121,27 @@ sub get_block_info
     {
         make_blockstate_prompts('carrots');
     }
+    elsif ($block_type eq 'B') # metal bars
+    {
+        make_blockstate_prompts('iron_bars');
+    }
+    elsif ($block_type eq 'S') # stairs
+    {
+        make_blockstate_prompts('oak_stairs');
+    }
+    elsif ($block_type eq 'D') #doors
+    {
+        make_blockstate_prompts('oak_door');
+    }
+    elsif ($block_type eq 'T') #thin pane
+    {
+        make_blockstate_prompts('glass_pane');
+    }
     else # not a simple anything 
     {
         $prompt = "Vanilla block to use as template (e.g. acacia_fence): ";
         my $block_stem = get_response($prompt);
-        make_blockstate_prompts($prompt);
+        make_blockstate_prompts($block_stem);
     } ## end-else not a simple cube
 } ## end sub get_block_info
 
@@ -138,10 +154,11 @@ Bundles up a bunch of repetitive, common code for making blockstates.
 
 sub make_blockstate_prompts
 {
-    my $(blockstem, ) = @_;
+    my ($block_stem, ) = @_;
 
     my $not_done = 1;
     my $template_json = get_template($block_stem, $MC_BLOCKSTATE_PATH);
+    die if ! defined $template_json;
     print("Source blockstate: ", $template_json, "\n") if $verbose;
     while ($not_done)
     {
