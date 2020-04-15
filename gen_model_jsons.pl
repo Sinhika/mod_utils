@@ -95,20 +95,19 @@ while ($not_done)
     if ($block_or_item eq 'B')
     {
         print "Generic block (G;default), crop block (C), ",
-            "Face block [like pumpkin] (F), pillar/log block (P), ",
-            "Bars [like iron_bars] (B), Doors (D), ", 
-            "Thin pane [like glass] (T), Stairs (S) ? ";
+            "Face block [like jack_o_lantern] (F), pillar/log block (P), ",
+            "Machine [like furnace] (M), Bars [like iron_bars] (B), ",
+            "Doors (D), Thin pane [like glass] (T), Stairs (S) ? ";
         $resp = <STDIN>;
-        $block_subtype = ($resp =~ /^[GCFPBTSD]/i) 
+        $block_subtype = ($resp =~ /^[GCFPMBTSD]/i) 
                         ? uc(substr($resp,0,1)) 
                         : 'G';
     } ## end-if block
     else {
-        print "Generic inventory item (G;default), simple item (S), ",
-            "item-of-block (B), bow (W), armor set (A), tool set (T),",
-            " Stair Item because I screwed up (Q) ? ";
+        print "Generic inventory item (G;default),",
+            "item-of-block (B), bow (W), armor set (A), tool set (T) ? ";
         $resp = <STDIN>;
-        $item_subtype = ($resp =~ /^[GBAWTSQ]/i) ?  uc(substr($resp,0,1)) : 'G';
+        $item_subtype = ($resp =~ /^[GBAWT]/i) ?  uc(substr($resp,0,1)) : 'G';
     } ## end-else item
 
     if ($verbose) {
@@ -134,6 +133,62 @@ exit;
 =head1 SUBROUTINES
 
 =over
+
+=item B<get_item_info>
+
+Summary of subroutine
+
+Params: $item_subtype
+
+=cut
+
+sub get_item_info
+{
+    my $item_type = $_[0];
+    my $resp;
+    my $prompt;
+    my ($item_template, $item_stem);
+    my @item_textures;
+    my @out_jsons;
+    my $found = 0;
+    my $not_done = 1;
+
+    if ($item_type eq 'B') # item-of-block (B)
+    {
+        while ($not_done)
+        {
+            $prompt = "Name of block to create itemblock model for (e.g. foo_block): ";
+            @out_jsons = get_simple_json_path($prompt, $ITEM_MODEL_PATH);
+            write_item_of_block(@out_jsons);
+            $not_done = check_repeat(
+                        "Create another item-of-block [Y/N]? ");
+        } ## end while not_done 
+    }
+    elsif ($item_type eq 'G') #  Generic inventory item (G;default)",
+    {
+        make_model_prompts(['baked_potato',], 'baked_potato', ['baked_potato',],
+            $MC_ITEM_MODEL_PATH, $ITEM_MODEL_PATH);
+    }
+    elsif ($item_type eq 'W') # bow (W)
+    {
+        make_model_prompts(['bow','bow_pulling_0', 'bow_pulling_1',
+            'bow_pulling_2'], 'bow', ['bow',], 
+            $MC_ITEM_MODEL_PATH, $ITEM_MODEL_PATH);
+    }
+    elsif ($item_type eq 'A') # armor set (A)
+    {
+        make_model_prompts(['iron_boots', 'iron_chestplate', 'iron_helmet',
+                'iron_leggings'], 'iron', ['iron',],
+            $MC_ITEM_MODEL_PATH, $ITEM_MODEL_PATH);
+    }
+    elsif ($item_type eq 'T') # tool set (T) 
+    {
+        make_model_prompts(['iron_axe', 'iron_hoe', 'iron_pickaxe', 
+            'iron_shovel', 'iron_sword'], 'iron', ['iron',],
+            $MC_ITEM_MODEL_PATH, $ITEM_MODEL_PATH);
+    }
+} ## end sub get_item_info
+
 
 =item get_block_info
 
@@ -169,7 +224,64 @@ sub get_block_info
     {
         make_model_prompts(['wheat_stage0', 'wheat_stage1', 'wheat_stage2',
             'wheat_stage3', 'wheat_stage4', 'wheat_stage5', 'wheat_stage6', 
-            'wheat_stage7'], 'wheat', 'wheat', 
+            'wheat_stage7'], 'wheat', ['wheat',], 
+            $MC_BLOCK_MODEL_PATH, $BLOCK_MODEL_PATH);
+    }
+    elsif ($block_type eq 'P')  # pillar/log block
+    {
+        make_model_prompts(['oak_log',], 'oak_log', ['oak_log_top', 'oak_log'],
+                $MC_BLOCK_MODEL_PATH, $BLOCK_MODEL_PATH);
+    } ## end-elsif P
+    elsif ($block_type eq 'F')  # block with facing
+    {
+        # 1 = furnace, 2 = smoker
+        $prompt = "Pick one: (1) front, top & sides different, or "
+            . "(2) front, top, sides & bottom different: ";
+        my $choice = get_response($prompt);
+        if ($choice eq '1') 
+        {
+            make_model_prompts(['furnace',], 'furnace', 
+                ['furnace_top', 'furnace_front', 'furnace_side'], 
+                $MC_BLOCK_MODEL_PATH, $BLOCK_MODEL_PATH);
+        }
+        elsif ($choice eq '2')
+        {
+            make_model_prompts(['smoker',], 'smoker', 
+                ['smoker_bottom', 'smoker_top', 'smoker_front', 'smoker_side'], 
+                $MC_BLOCK_MODEL_PATH, $BLOCK_MODEL_PATH);
+        }
+    } ## end-elsif F
+    elsif ($block_type eq 'M') # furnace-like machine
+    {
+        make_model_prompts(['furnace', 'furnace_on'], 'furnace',
+                ['furnace_top', 'furnace_front', 'furnace_front_on',
+                  'furnace_side'], $MC_BLOCK_MODEL_PATH, $BLOCK_MODEL_PATH);
+    } ## end-elsif M
+    elsif ($block_type eq 'B') # Bars [like iron_bars] (B)
+    {
+        make_model_prompts(['iron_bars_cap_alt', 'iron_bars_cap',
+            'iron_bars_post_ends', 'iron_bars_post', 'iron_bars_side_alt',
+            'iron_bars_side'], 'iron_bars', ['iron_bars',], 
+            $MC_BLOCK_MODEL_PATH, $BLOCK_MODEL_PATH);
+    } ## end elsif B
+    elsif ($block_type eq 'D') # Doors (D)
+    {
+        make_model_prompts(['oak_door_bottom_hinge', 'oak_door_bottom',
+            'oak_door_top_hinge', 'oak_door_top'], 'oak_door', 
+            ['oak_door_bottom', 'oak_door_top'],
+            $MC_BLOCK_MODEL_PATH, $BLOCK_MODEL_PATH);
+    }
+    elsif ($block_type eq 'T') # Thin pane [like glass] (T)
+    {
+        make_model_prompts(['glass_pane_noside_alt', 'glass_pane_noside',
+            'glass_pane_post', 'glass_pane_side', 'glass_pane_side_alt'],
+            'glass_pane', ['glass_pane_top', 'glass'],
+            $MC_BLOCK_MODEL_PATH, $BLOCK_MODEL_PATH);
+    }
+    elsif ($block_type eq 'S') # Stairs (S) 
+    {
+        make_model_prompts(['oak_stairs', 'oak_stairs_inner', 
+            'oak_stairs_outer'], 'oak_stairs', ['oak_planks',],
             $MC_BLOCK_MODEL_PATH, $BLOCK_MODEL_PATH);
     }
 } ## end-get_block_info
@@ -183,14 +295,19 @@ Bundles up a bunch of repetitive, common code for making models.
 
 sub make_model_prompts
 {
-    my ($ref_models, $mc_stem, $mc_texture, $mc_path, $mod_path) = @_;
+    my ($ref_models, $mc_stem, $ref_mc_textures, $mc_path, $mod_path) = @_;
     my $prompt = 
         "Common stem name of models to create files for (e.g. foocrop): ";
     my $new_modstem = get_response($prompt);
-    $prompt = "Stem name of new/replacement texture: ";
-    my $new_texture = get_response($prompt);
-    copy_models($mc_path, $mod_path, $mc_stem, $new_modstem, $mc_texture, 
-                $new_texture, $ref_models);
+    my %texture_hash;
+    foreach my $mc_texture (@$ref_mc_textures) 
+    {
+        $prompt = "Stem name of replacement texture for ${mc_texture}: ";
+        my $new_texture = get_response($prompt);
+        $texture_hash{$mc_texture} = $new_texture;
+    }
+    copy_models($mc_path, $mod_path, $mc_stem, $new_modstem, \%texture_hash,
+                $ref_models);
 } ## end sub make_model_prompts
 
 
@@ -213,7 +330,25 @@ sub write_cubeall_model
     close $fh;
 } ## end sub write_cubeall_model
 
-=item copy_models
+
+=item B<write_item_of_block>
+
+Write the item-of-block model--very simple model.
+
+=cut
+
+sub write_item_of_block
+{
+    my ($parent, $out_json) = @_;
+    open (my $fh, ">", $out_json) or die "Unable to open ${out_json}: $!";
+    print $fh "{\n";
+    print $fh "\t\"parent\": \"block/${MODID}:${parent}\"\n";
+    print $fh "}\n";
+    close $fh;
+} ## end sub write_item_of_block
+
+
+=item B<copy_models>
 
 copy one or more simple models that have one texture.
 
@@ -222,7 +357,7 @@ copy one or more simple models that have one texture.
 sub copy_models
 {
     my ($mc_path, $mod_path, $in_mstem, $out_mstem, 
-        $old_texture, $new_texture, $model_list) = @_;
+        $href_textures, $model_list) = @_;
     my ($in_model_path, $out_model_path, $out_model);
 
     foreach my $model (@$model_list)
@@ -239,28 +374,19 @@ sub copy_models
 
         while (my $line = <$fh>)
         {
-            $line =~ s/${old_texture}/${new_texture}/;
-            $line =~ s/block\/(${new_texture})/${MODID}:block\/$1/;
-            $line =~ s/item\/(${new_texture})/${MODID}:item\/$1/;
+            foreach my $old_texture (keys(%$href_textures))
+            {
+                my $new_texture = $href_textures->{$old_texture};
+                $line =~ s/${old_texture}/${new_texture}/;
+                $line =~ s/block\/(${new_texture})/${MODID}:block\/$1/;
+                $line =~ s/item\/(${new_texture})/${MODID}:item\/$1/;
+            }
             print $fh2 $line;
         } ## end-while
         close $fh2;
         close $fh;
     } ## end-foreach
 } ## end copy_models()
-
-=item B<get_item_info>
-
-Summary of subroutine
-
-Params: $item_subtype
-
-=cut
-
-sub get_item_info
-{
-} ## end sub get_item_info
-
 
 __END__
 
