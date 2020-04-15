@@ -36,7 +36,6 @@ use Cwd;
 use File::Spec;
 use File::Copy;
 use File::Path qw(make_path);
-use List::MoreUtils qw(uniq);
 
 use FindBin;
 use lib "$FindBin::Bin";
@@ -45,8 +44,6 @@ use generator;
 # output directory is...
 my $TOP_LEVEL = defined($ARGV[1]) ? $ARGV[1] : getcwd();
 my $BLOCKSTATE_PATH = "${TOP_LEVEL}/blockstates";
-my $BLOCK_MODEL_PATH = "${TOP_LEVEL}/models/block";
-my $ITEM_MODEL_PATH = "${TOP_LEVEL}/models/item";
 
 my $MODID = $ARGV[0];
 
@@ -119,7 +116,7 @@ sub get_block_info
     } ## end-elsif 'F'            
     elsif ($block_type eq 'C') # crop block (has growth stages).
     {
-        make_blockstate_prompts('carrots');
+        make_blockstate_prompts('wheat');
     }
     elsif ($block_type eq 'B') # metal bars
     {
