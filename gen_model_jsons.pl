@@ -189,7 +189,7 @@ sub make_model_prompts
     my $new_modstem = get_response($prompt);
     $prompt = "Stem name of new/replacement texture: ";
     my $new_texture = get_response($prompt);
-    copy_models($mc_path, $mc_stem, $new_modstem, $mc_texture, 
+    copy_models($mc_path, $mod_path, $mc_stem, $new_modstem, $mc_texture, 
                 $new_texture, $ref_models);
 } ## end sub make_model_prompts
 
@@ -240,6 +240,8 @@ sub copy_models
         while (my $line = <$fh>)
         {
             $line =~ s/${old_texture}/${new_texture}/;
+            $line =~ s/block\/(${new_texture})/${MODID}:block\/$1/;
+            $line =~ s/item\/(${new_texture})/${MODID}:item\/$1/;
             print $fh2 $line;
         } ## end-while
         close $fh2;
