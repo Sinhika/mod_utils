@@ -1,7 +1,7 @@
 #!/bin/bash
 
-MC_VERSION=1.15.2
-TOPDIR=${HOME}/Projects/Minecraft_1.15
+MC_VERSION=1.14.4
+TOPDIR=${HOME}/Projects/Minecraft_1.14
 MAVEN_BASE=${TOPDIR}/mcmodsrepo/mod/alexndr
 
 #DEOBFLIST="SimpleOres2 Fusion Machines Netherrocks Aesthetics"
