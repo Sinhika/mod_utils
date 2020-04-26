@@ -1,27 +1,24 @@
 #!/bin/bash
 
+MC_VERSION=1.15.2
 TOPDIR=${HOME}/Projects/Minecraft_1.15
-DEVLIB=${TOPDIR}/devlibs
-DEVLIB110=$DEVLIB
+MAVEN_BASE=${TOPDIR}/mcmodsrepo/mod/alexndr
+
 #DEOBFLIST="SimpleOres2 Fusion Machines Netherrocks Aesthetics"
-DEOBFLIST="SimpleOres2 Netherrocks"
+#deobfuscated jars are now specified in build.gradle to be deobfuscated from
+#the maven repo.  devlibs is dead.
+#
+echo "Find obfuscated jar in maven repo and copy to run/mods dirs..."
+JARLIST=`ls -v -r ${MAVEN_BASE}/simpleores/SimpleOres2/${MC_VERSION}-*/*.jar`
+SIMPLEORES_JAR=`echo ${JARLIST} | cut -d' ' -f1`
 
-echo "Cleaning existing 1.15 libs..."
-cd ${DEVLIB}
+cd ${TOPDIR}/Fusion/run/mods
 rm -f *.jar
-
-for D in ${DEOBFLIST}; do
-    JARLIST=`ls -v -r ${TOPDIR}/${D}/build/libs/*-deobf.jar`
-    JAR=`echo ${JARLIST}  | cut -d' ' -f1`
-    cp -v ${JAR} .
-done
-
-cd ${TOPDIR}/Fusion/libs
-rm -f *.jar
-ln -v -s ${DEVLIB}/simpleores-*.jar .
+cp -v $SIMPLEORES_JAR .
 
 exit
 
+## TODO ##
 cd ${TOPDIR}/Machines/libs
 rm -f *.jar
 ln -v -s ${DEVLIB}/simpleores-*.jar .
