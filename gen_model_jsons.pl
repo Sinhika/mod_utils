@@ -342,7 +342,7 @@ sub write_item_of_block
     my ($parent, $out_json) = @_;
     open (my $fh, ">", $out_json) or die "Unable to open ${out_json}: $!";
     print $fh "{\n";
-    print $fh "\t\"parent\": \"block/${MODID}:${parent}\"\n";
+    print $fh "\t\"parent\": \"${MODID}:block/${parent}\"\n";
     print $fh "}\n";
     close $fh;
 } ## end sub write_item_of_block
