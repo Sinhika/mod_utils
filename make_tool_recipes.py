@@ -4,7 +4,7 @@
 Generate standard tool recipes, given material input. Outputs are
 <prefix>_<toolname>.json recipe files.
 
-Must be run in src/main/resources/assets/<modid>/recipes.
+Must be run in src/main/resources/data/<modid>/recipes.
 
 SYNOPSIS:
     make_tool_recipes.py [--armor][--nostore] <tooltype_prefix>
@@ -14,7 +14,7 @@ SYNOPSIS:
     Options:
         --armor - also generate armor recipes for material
         --nostore - do not generate recipes for default storage items (block,
-                    ingot, nugget)
+                    ingot, nugget, large chunk)
 
 """
 
@@ -27,7 +27,7 @@ import copy
 
 TOOLS = ('axe', 'hoe', 'pickaxe', 'shears', 'shovel', 'sword')
 ARMORS = ('boots', 'chestplate', 'helmet', 'leggings')
-STORAGE = ('block', 'ingot', 'ingot_from_nugget', 'nugget')
+STORAGE = ('block', 'ingot', 'ingot_from_nuggets', 'nugget', 'large_chunk')
 
 PATTERN_TEMPLATES = { 'axe' : [ "SS ", "ST ", " T " ], 
         'hoe' : [ "SS ", " T ", " T " ], 
@@ -41,8 +41,10 @@ PATTERN_TEMPLATES = { 'axe' : [ "SS ", "ST ", " T " ],
         'leggings' : ["SSS", "S S", "S S"],
         'block' : ["SSS", "SSS", "SSS"],
         'ingot' : "shapeless" ,
-        'ingot_from_nugget' : ["NNN", "NNN", "NNN"],
-        'nugget' : "shapeless" }
+        'ingot_from_nuggets' : ["###", "###", "###"],
+        'nugget' : "shapeless",
+        'large_chunk' : ["###","# #", "###"]
+        }
 
 RECIPE_TEMPLATE = { "conditions" : [], 
         "result" : { "item" : None },
@@ -65,6 +67,8 @@ parser.add_argument("-a", "--armor", action="store_true",
         help="also generate armor recipes for material");
 parser.add_argument("--nostore", action="store_true",
         help="do not generate recipes for default storage items (block, ingot, nugget)")
+parser.add_argument("-c", "--conditions", action="store_true",
+        help="insert flag condition into recipe. Will need editing.");
 args = parser.parse_args()
 
 # parse directory and make sure we are in the right place...
@@ -74,8 +78,8 @@ if tail != 'recipes':
     exit()
 (head, modid) = os.path.split(head)
 (head, tail) = os.path.split(head)
-if tail != 'assets':
-    print('Warning: not in assets/{}/recipes directory'.format(modid))
+if tail != 'data':
+    print('Warning: not in data/{}/recipes directory'.format(modid))
     exit()
 
 # what all are we doing? Inform user.
@@ -83,6 +87,8 @@ ingot_name = None
 ingot2_name = None
 block_name = None
 nugget_name = None
+large_chunk_name = None
+
 item_list = ["{}_{}".format(args.tooltype_prefix, a) for a in TOOLS]
 if args.armor:
     armor_list = ["{}_{}".format(args.tooltype_prefix, a) for a in ARMORS]
@@ -93,6 +99,8 @@ if not args.nostore:
     ingot_name = slist[1]
     ingot2_name = slist[2]
     nugget_name = slist[3]
+    slist[4] = "large_{}_chunk".format(args.tooltype_prefix)
+    large_chunk_name = slist[4]
     item_list.extend(slist)
 print("Generating {} recipes for mod {}:".format(args.tooltype_prefix, modid))
 for a in item_list:
@@ -104,11 +112,11 @@ if ok[0:1].lower() != 'y':
 print()
  
 # get my constants:
-pattern_dict = {"S" : "metal element", "T" : "stick element", "N" : "nugget" }
+pattern_dict = {"S" : "metal element", "T" : "stick element", "#" : "nugget" }
 
 pattern_dict["S"] = "{}:{}_{}".format(modid, args.tooltype_prefix, "ingot")
 pattern_dict["T"] = "forge:rods/wooden"
-pattern_dict["N"] = "{}:{}_{}".format(modid, args.tooltype_prefix, "nugget")
+pattern_dict["#"] = "{}:{}_{}".format(modid, args.tooltype_prefix, "nugget")
 
 # tell the user what we settled on.
 for c in pattern_dict.keys():
@@ -122,9 +130,16 @@ print()
 for item in item_list:
     filename = "{}.json".format(item)
     print("Creating {} for item {}".format( filename, item))
-    type_of_item = item.rsplit("_",1)[1]
+
+    if item.startswith('large'):
+        type_of_item = 'large_chunk'
+    elif item.endswith('nuggets'):
+        type_of_item = 'ingot_from_nuggets'
+    else:
+        type_of_item = item.rsplit("_",1)[1]
     print("type of item: ", type_of_item)
-    if item != ingot_name && result != nugget_name && result != ingot2_name:
+
+    if (type_of_item not in STORAGE) or (item == block_name):
         recipe = copy.deepcopy(RECIPE_TEMPLATE)
         recipe["result"]['item'] = "{}:{}".format(modid, item)
         recipe["pattern"] = PATTERN_TEMPLATES[type_of_item]
@@ -133,12 +148,16 @@ for item in item_list:
             recipe["key"]["S"] = {"item" : pattern_dict["S"] }
         if any('T' in a for a in recipe["pattern"]):
             recipe["key"]["T"] = {"tag" : pattern_dict["T"] }
-    elif item == ingot2_name:  # the ingot_from_nugget recipe
+    elif item in (ingot2_name, large_chunk_name):
         recipe = copy.deepcopy(RECIPE_TEMPLATE)
-        recipe["result"]['item'] = "{}:{}".format(modid, ingot_name)
-        recipe["pattern"] = PATTERN_TEMPLATES[type_of_item]
+        if item == ingot2_name:
+            recipe["result"]['item'] = "{}:{}".format(modid, ingot_name)
+            recipe["pattern"] = PATTERN_TEMPLATES['ingot_from_nuggets']
+        else:
+            recipe["result"]['item'] = "{}:{}".format(modid, large_chunk_name)
+            recipe["pattern"] = PATTERN_TEMPLATES['large_chunk']
         # build recipe key
-        recipe["key"]["N"] = {"item" : pattern_dict["N"] }
+        recipe["key"]["#"] = {"item" : pattern_dict["#"] }
     else:
         recipe = copy.deepcopy(INGOT_TEMPLATE)
         if item == ingot_name:
@@ -147,6 +166,14 @@ for item in item_list:
         elif item == nugget_name:
             recipe["result"]['item'] = "{}:{}".format(modid, nugget_name)
             recipe["ingredients"][0]["item"] = "{}:{}".format(modid, ingot_name) 
+
+    if args.conditions:
+        mycondition = copy.deepcopy(CONDITION_TEMPLATE)
+        mycondition["type"] = "{}:flag".format(modid)
+        mycondition["flag"] = "{}_enabled".format(args.tooltype_prefix);
+        recipe["conditions"].append(mycondition)
+    else:
+        del recipe["conditions"]
 
     with open(filename, 'w') as f:
         json.dump(recipe, f, indent=4, sort_keys=True)
