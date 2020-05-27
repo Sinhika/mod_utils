@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 """ PYTHON EXERCISE IN READING/WRITING JSON FILES
 
-Generate standard tool recipes, given material input. Reads _constants.json
-and _factories.json files to suggest ingredients and conditions. Outputs are
+Generate standard tool recipes, given material input. Outputs are
 <prefix>_<toolname>.json recipe files.
 
 Must be run in src/main/resources/assets/<modid>/recipes.
@@ -15,7 +14,7 @@ SYNOPSIS:
     Options:
         --armor - also generate armor recipes for material
         --nostore - do not generate recipes for default storage items (block,
-                    ingot)
+                    ingot, nugget)
 
 """
 
@@ -28,7 +27,7 @@ import copy
 
 TOOLS = ('axe', 'hoe', 'pickaxe', 'shears', 'shovel', 'sword')
 ARMORS = ('boots', 'chestplate', 'helmet', 'leggings')
-STORAGE = ('block', 'ingot')
+STORAGE = ('block', 'ingot', 'ingot_from_nugget', 'nugget')
 
 PATTERN_TEMPLATES = { 'axe' : [ "SS ", "ST ", " T " ], 
         'hoe' : [ "SS ", " T ", " T " ], 
@@ -41,12 +40,14 @@ PATTERN_TEMPLATES = { 'axe' : [ "SS ", "ST ", " T " ],
         'helmet' : ["SSS", "S S"],
         'leggings' : ["SSS", "S S", "S S"],
         'block' : ["SSS", "SSS", "SSS"],
-        'ingot' : "shapeless" }
+        'ingot' : "shapeless" ,
+        'ingot_from_nugget' : ["NNN", "NNN", "NNN"],
+        'nugget' : "shapeless" }
 
 RECIPE_TEMPLATE = { "conditions" : [], 
         "result" : { "item" : None },
         "pattern" : None,
-        "type" : "forge:ore_shaped",
+        "type" : "minecraft:crafting_shaped",
         "key" : {  }
     }
 
@@ -55,7 +56,7 @@ INGOT_TEMPLATE = { "conditions" : [],
         "ingredients" : [ {"item" : None } ],
         "result" : { "item" : None, "count" : 9 } }
 
-CONDITION_TEMPLATE = { "type" : None, "value" : "true" }
+CONDITION_TEMPLATE = { "type" : None, "flag" : None }
 
 # command-line arguments
 parser = argparse.ArgumentParser(description="Generate standard tool, armor and storage block recipes")
@@ -63,7 +64,7 @@ parser.add_argument("tooltype_prefix", help="tool material-based prefix for stan
 parser.add_argument("-a", "--armor", action="store_true",
         help="also generate armor recipes for material");
 parser.add_argument("--nostore", action="store_true",
-        help="do not generate recipes for default storage items (block, ingot)")
+        help="do not generate recipes for default storage items (block, ingot, nugget)")
 args = parser.parse_args()
 
 # parse directory and make sure we are in the right place...
@@ -79,7 +80,9 @@ if tail != 'assets':
 
 # what all are we doing? Inform user.
 ingot_name = None
+ingot2_name = None
 block_name = None
+nugget_name = None
 item_list = ["{}_{}".format(args.tooltype_prefix, a) for a in TOOLS]
 if args.armor:
     armor_list = ["{}_{}".format(args.tooltype_prefix, a) for a in ARMORS]
@@ -88,6 +91,8 @@ if not args.nostore:
     slist = ["{}_{}".format(args.tooltype_prefix, a) for a in STORAGE] 
     block_name = slist[0]
     ingot_name = slist[1]
+    ingot2_name = slist[2]
+    nugget_name = slist[3]
     item_list.extend(slist)
 print("Generating {} recipes for mod {}:".format(args.tooltype_prefix, modid))
 for a in item_list:
@@ -98,41 +103,12 @@ if ok[0:1].lower() != 'y':
     exit()
 print()
  
-# look for _constants.json and import it, get constants
-constants = None
-if os.path.exists('_constants.json'):
-    with open('_constants.json', 'r') as f:
-        json_constants = json.load(f)
-    constants = []
-    for a in json_constants:
-        constants.append(a['name'])
-else:
-    print("Warning: no _constants.json file!")
-#print('constants =', constants)
-
-# look for _factories.json and import it, get conditions
-conditions = None
-if os.path.exists('_factories.json'):
-    with open('_factories.json', 'r') as f:
-        json_factories = json.load(f)
-    conditions = list(json_factories['conditions'].keys())
-else:
-    print("Warning: no _factories.json file!")
-#print('conditions =', conditions)
-
 # get my constants:
-pattern_dict = {"S" : "metal element", "T" : "stick element" }
-if constants:
-    for c in sorted(pattern_dict.keys()):
-        print("Which constant should represent {} ({})?".format(c, pattern_dict[c]))
-        for count, constant in enumerate(constants):
-            print("\t{}. {}".format(count, constant));
-        N = int(input("Number? "))
-        pattern_dict[c] = "#" + constants[N]
-        print()    
-else:
-    pattern_dict["S"] = "{}:{}_{}".format(modid, args.tooltype_prefix, "ingot")
-    pattern_dict["T"] = "minecraft:stick_wood"
+pattern_dict = {"S" : "metal element", "T" : "stick element", "N" : "nugget" }
+
+pattern_dict["S"] = "{}:{}_{}".format(modid, args.tooltype_prefix, "ingot")
+pattern_dict["T"] = "forge:rods/wooden"
+pattern_dict["N"] = "{}:{}_{}".format(modid, args.tooltype_prefix, "nugget")
 
 # tell the user what we settled on.
 for c in pattern_dict.keys():
@@ -148,7 +124,7 @@ for item in item_list:
     print("Creating {} for item {}".format( filename, item))
     type_of_item = item.rsplit("_",1)[1]
     print("type of item: ", type_of_item)
-    if item != ingot_name:
+    if item != ingot_name && result != nugget_name && result != ingot2_name:
         recipe = copy.deepcopy(RECIPE_TEMPLATE)
         recipe["result"]['item'] = "{}:{}".format(modid, item)
         recipe["pattern"] = PATTERN_TEMPLATES[type_of_item]
@@ -156,27 +132,21 @@ for item in item_list:
         if any('S' in a for a in recipe["pattern"]):
             recipe["key"]["S"] = {"item" : pattern_dict["S"] }
         if any('T' in a for a in recipe["pattern"]):
-            recipe["key"]["T"] = {"item" : pattern_dict["T"] }
+            recipe["key"]["T"] = {"tag" : pattern_dict["T"] }
+    elif item == ingot2_name:  # the ingot_from_nugget recipe
+        recipe = copy.deepcopy(RECIPE_TEMPLATE)
+        recipe["result"]['item'] = "{}:{}".format(modid, ingot_name)
+        recipe["pattern"] = PATTERN_TEMPLATES[type_of_item]
+        # build recipe key
+        recipe["key"]["N"] = {"item" : pattern_dict["N"] }
     else:
         recipe = copy.deepcopy(INGOT_TEMPLATE)
-        recipe["result"]['item'] = "{}:{}".format(modid, ingot_name)
-        recipe["ingredients"][0]["item"] = "{}:{}".format(modid, block_name) 
-
-    if conditions:
-        done = False
-        while not done:
-            print("Possible conditions that might apply:")
-            for jj, cond in enumerate(sorted(conditions)):
-                print("\t{}. {}".format(jj, cond));
-            N = input("Number or return or 'done'? ")
-            if not N.isdigit():
-                done = True
-                print()
-            else:
-                N = int(N)
-                mycondition = copy.deepcopy(CONDITION_TEMPLATE)
-                mycondition["type"] = sorted(conditions)[N]
-                recipe["conditions"].append(mycondition)
+        if item == ingot_name:
+            recipe["result"]['item'] = "{}:{}".format(modid, ingot_name)
+            recipe["ingredients"][0]["item"] = "{}:{}".format(modid, block_name) 
+        elif item == nugget_name:
+            recipe["result"]['item'] = "{}:{}".format(modid, nugget_name)
+            recipe["ingredients"][0]["item"] = "{}:{}".format(modid, ingot_name) 
 
     with open(filename, 'w') as f:
         json.dump(recipe, f, indent=4, sort_keys=True)
