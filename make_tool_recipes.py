@@ -15,6 +15,7 @@ SYNOPSIS:
         --armor - also generate armor recipes for material
         --nostore - do not generate recipes for default storage items (block,
                     ingot, nugget, large chunk)
+        --recycle_only - only do vanilla recycling recipes.
 
 """
 
@@ -53,6 +54,17 @@ RECIPE_TEMPLATE = { "conditions" : [],
         "key" : {  }
     }
 
+VANILLA_RECYCLING_TEMPLATE = { "type" : "minecraft:smelting",
+        "ingredient" : [],
+        "result" : None,
+        "experience" : 0.2,
+        "cookingtime" : 200
+    }
+
+INGREDIENT_TEMPLATE = { "item" : None,
+        "count" : 1
+        }
+
 INGOT_TEMPLATE = { "conditions" : [], 
         "type" : "minecraft:crafting_shapeless",
         "ingredients" : [ {"item" : None } ],
@@ -68,7 +80,10 @@ parser.add_argument("-a", "--armor", action="store_true",
 parser.add_argument("--nostore", action="store_true",
         help="do not generate recipes for default storage items (block, ingot, nugget)")
 parser.add_argument("-c", "--conditions", action="store_true",
-        help="insert flag condition into recipe. Will need editing.");
+        help="insert flag condition into recipe. Will need editing.")
+parser.add_argument("--recycle_only", action="store_true",
+        help="only generate vanilla recycling recipes")
+
 args = parser.parse_args()
 
 # parse directory and make sure we are in the right place...
@@ -81,6 +96,32 @@ if tail != 'recipes':
 if tail != 'data':
     print('Warning: not in data/{}/recipes directory'.format(modid))
     exit()
+
+# VANILLA RECYCLING RECIPES:
+# smelting
+filename = "{}_nugget_from_smelting.json".format(args.tooltype_prefix)
+recyc_list = ["{}_{}".format(args.tooltype_prefix, a) for a in TOOLS]
+if args.armor:
+    armor_list = ["{}_{}".format(args.tooltype_prefix, a) for a in ARMORS]
+    recyc_list.extend(armor_list)
+recipe = copy.deepcopy(VANILLA_RECYCLING_TEMPLATE)
+recipe["result"] = "{}:{}_nugget".format(modid, args.tooltype_prefix)
+for item in recyc_list:
+    ingredient = copy.deepcopy(INGREDIENT_TEMPLATE)
+    ingredient["item"] = "{}:{}".format(modid, item)
+    recipe["ingredient"].append(ingredient)
+with open(filename, 'w') as f:
+        json.dump(recipe, f, indent=4, sort_keys=True)
+
+#blasting
+filename = "{}_nugget_from_blasting.json".format(args.tooltype_prefix)
+recipe["cookingtime"] = 100
+recipe["type"] = "minecraft:blasting"
+with open(filename, 'w') as f:
+        json.dump(recipe, f, indent=4, sort_keys=True)
+
+if (args.recycle_only):
+    sys.exit(None)
 
 # what all are we doing? Inform user.
 ingot_name = None
@@ -170,13 +211,13 @@ for item in item_list:
     if args.conditions:
         mycondition = copy.deepcopy(CONDITION_TEMPLATE)
         mycondition["type"] = "{}:flag".format(modid)
-        mycondition["flag"] = "{}_enabled".format(args.tooltype_prefix);
+        mycondition["flag"] = "{}_tools_enabled".format(args.tooltype_prefix);
         recipe["conditions"].append(mycondition)
     else:
         del recipe["conditions"]
 
     with open(filename, 'w') as f:
         json.dump(recipe, f, indent=4, sort_keys=True)
-        
+
 print("Recipes done")
 
