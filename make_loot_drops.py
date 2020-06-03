@@ -47,4 +47,12 @@ if tail != 'data':
     print('Warning: not in data/{}/loot_tables/blocks directory'.format(modid))
     sys.exit()
 
+filename = "{}.json".format(args.block_name);
+recipe = copy.deepcopy(LOOT_TABLE_TEMPLATE);
+recipe["pools"][0]["name"] = "{}:droppool".format(modid)
+recipe["pools"][0]["entries"][0]["name"] = "{}:{}".format(modid, args.block_name)
+with open(filename, 'w') as f:
+        json.dump(recipe, f, indent=4, sort_keys=True)
+
+print("Created {}".format(filename))
 
