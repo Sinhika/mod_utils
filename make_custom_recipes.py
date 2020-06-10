@@ -55,7 +55,7 @@ SHAPELESS_TEMPLATE = {
     "type" : "minecraft:crafting_shapeless",
     "conditions" : [], 
     "ingredients" : [ {"item" : None } ],
-    "result" : { "item" : None, "count" : 1 } 
+    "result" : { "item" : None } 
 }
 
 # also used for blasting, smoking and campfire_cooking.
@@ -84,13 +84,12 @@ parser.add_argument("-c", "--conditions", action="store_true",
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("-i","--ingredient", help="id of shapeless or smelting/cooking ingredient")
 group.add_argument("-p","--pattern", help="shaped crafting pattern, e.g. '\"SSS\",\" T \",\" T \"'")
-group2 = parser.add_mutually_exclusive_group(required=True)
+group2 = parser.add_mutually_exclusive_group()
 group2.add_argument("-n","--count", type=int, default=1, help="count of shapeless ingredients")
 group2.add_argument("-k","--keys", 
     help="key values for pattern, semi-colon separated; e.g. 'S=minecraft:iron;T=forge:items/wooden_rod'")
 parser.add_argument("--xp", type=float, help="smelting xp")
 
-# TODO 
 args = parser.parse_args()
 print(args, "\n")
 # end command-line arguments
@@ -106,52 +105,53 @@ if tail != 'data':
     print('Warning: not in data/{}/recipes directory'.format(modid))
     exit()
 
+filename = "{}.json".format(args.result)
+
 if args.type == 'shapeless':
     recipe = copy.deepcopy(SHAPELESS_TEMPLATE)
-    recipe["ingredients"]["item"] = args.ingredient
-    recipe["result"]["item"] = args.result
-    recipe["result"]["count"] = args.result_count
+    recipe["ingredients"][0]["item"] = args.ingredient
+    if args.count > 1:
+        recipe["ingredients"][0]["count"] = args.count
+    recipe["result"]["item"] = "{}:{}".format(modid, args.result)
+    if args.result_count > 1:
+        recipe["result"]["count"] = args.result_count
         
 elif args.type == 'shaped':
     recipe = copy.deepcopy(SHAPED_TEMPLATE)
-    recipe["result"]["item"] = args.result
+    recipe["result"]["item"] = "{}:{}".format(modid, args.result)
     if args.result_count > 1:
         recipe["result"]["count"] = args.result_count
     recipe["pattern"] = [a for a in args.pattern.split(',')]
     keylist = args.keys.split(';')
     for keystring in keylist:
         k,v = keystring.split('=')
-        recipe["key"][k] = { "item" : v } 
+        if "/" in v:
+            recipe["key"][k] = { "tag" : v } 
+        else:
+            recipe["key"][k] = { "item" : v } 
 
-elif args.type == 'smelting':
+elif (args.type == 'smelting') or (args.type == 'smoking') \
+     or (args.type == 'blasting') or (args.type == 'campfire'):
     recipe = copy.deepcopy(SMELTING_TEMPLATE)
+    filename = "{}_from_{}.json".format(args.result, args.type)
     recipe["ingredient"]["item"] = args.ingredient
-    recipe["result"] = args.result
-    result["experience"] = args.xp
+    if "/" in args.ingredient:
+        recipe["ingredients"]["tag"] = args.ingredient
+        del recipe["ingredient"]["item"]
+    recipe["result"] = "{}:{}".format(modid, args.result)
+    recipe["experience"] = args.xp
 
-elif args.type == 'smoking':
-    recipe = copy.deepcopy(SMELTING_TEMPLATE)
-    recipe["type"] = "minecraft:smoking"
-    recipe["cookingtime"] = 100
-    recipe["ingredient"]["item"] = args.ingredient
-    recipe["result"] = args.result
-    result["experience"] = args.xp
+    if args.type == 'smoking':
+        recipe["type"] = "minecraft:smoking"
+        recipe["cookingtime"] = 100
 
-elif args.type == 'blasting':
-    recipe = copy.deepcopy(SMELTING_TEMPLATE)
-    recipe["type"] = "minecraft:blasting"
-    recipe["cookingtime"] = 100
-    recipe["ingredient"]["item"] = args.ingredient
-    recipe["result"] = args.result
-    result["experience"] = args.xp
+    elif args.type == 'blasting':
+        recipe["type"] = "minecraft:blasting"
+        recipe["cookingtime"] = 100
 
-elif args.type == 'campfire':
-    recipe = copy.deepcopy(SMELTING_TEMPLATE)
-    recipe["type"] = "minecraft:campfire_cooking"
-    recipe["cookingtime"] = 600
-    recipe["ingredient"]["item"] = args.ingredient
-    recipe["result"] = args.result
-    result["experience"] = args.xp
+    elif args.type == 'campfire':
+        recipe["type"] = "minecraft:campfire_cooking"
+        recipe["cookingtime"] = 600
 
 if args.conditions:
     mycondition = copy.deepcopy(CONDITION_TEMPLATE)
@@ -161,4 +161,8 @@ if args.conditions:
 else:
     del recipe["conditions"]
 
+with open(filename, 'w') as f:
+    json.dump(recipe, f, indent=4, sort_keys=True)
+
+print("Recipe done")
 
