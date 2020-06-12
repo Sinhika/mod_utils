@@ -43,7 +43,7 @@ parser.add_argument("recipe_list", help="list of recipes to be granted",
     nargs='+')
 parser.add_argument("-i","--item", help="id of item whose possession triggers the advancement")
 args = parser.parse_args()
-print(args)
+#print(args)
 
 # parse directory and make sure we are in the right place...
 # ...src/main/resources/data/<modid>/advancements/recipes.
