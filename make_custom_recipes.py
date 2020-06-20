@@ -9,12 +9,11 @@ Must be run in src/main/resources/data/<modid>/recipes.
 SYNOPSIS:
 
 make_custom_recipes.py -h 
-make_custom_recipes.py [-h] -t
-                              {shaped,shapeless,smelting,smoking,blasting,campfire,fusion}
-                              [-c]
-                              (-i INGREDIENT | -p PATTERN | --catalyst CATALYST)
-                              [-n COUNT | -k KEYS | -a ALLOY_INPUTS] [--xp XP]
-                              result result_count
+usage: make_custom_recipes.py -t {shaped,shapeless,smelting,smoking,blasting,campfire,fusion}
+                            [-c] [--xp XP] [-f FILENAME]
+                            (-i INGREDIENT | -p PATTERN | --catalyst CATALYST)
+                            [-n COUNT | -k KEYS | -a ALLOY_INPUTS]
+                            result result_count
 
 Generate custom recipes
 
@@ -27,19 +26,23 @@ optional arguments:
   -t, --type {shaped,shapeless,smelting,smoking,blasting,campfire,fusion}
                         type of recipe
   -c, --conditions      insert flag condition into recipe. Will need editing.
+  --xp XP               smelting xp
+  -f FILENAME, --filename FILENAME
+                        specify filename instead of using default, which is
+                        the result
   -i INGREDIENT, --ingredient INGREDIENT
                         id of shapeless or smelting/cooking ingredient
   -p PATTERN, --pattern PATTERN
                         shaped crafting pattern, e.g. '"SSS"," T "," T "'
-  --catalyst CATALYST   catalyst for fusion alloying, e.g. 'minecraft:redstone_dust'
+  --catalyst CATALYST   catalyst for fusion alloying, e.g.
+                        'minecraft:redstone_dust'
   -n COUNT, --count COUNT
                         count of shapeless ingredients
   -k KEYS, --keys KEYS  key values for pattern, semi-colon separated; e.g.
                         'S=minecraft:iron;T=forge:items/wooden_rod'
   -a ALLOY_INPUTS, --alloy_inputs ALLOY_INPUTS
                         the 2 inputs to fusion alloying, semi-colon separated:
-                        e.g. 'minecraft:iron;minecraft:items/coals'
-  --xp XP               smelting xp
+                        e.g. 'minecraft:iron; minecraft:items/coals'
 
 """
 
@@ -100,6 +103,8 @@ parser.add_argument("-t", "--type", choices=['shaped','shapeless','smelting',
                     help="type of recipe", required=True)
 parser.add_argument("-c", "--conditions", action="store_true",
         help="insert flag condition into recipe. Will need editing.")
+parser.add_argument("--xp", type=float, help="smelting xp")
+parser.add_argument("-f","--filename", help="specify filename instead of using default, which is the result")
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("-i","--ingredient", help="id of shapeless or smelting/cooking ingredient")
 group.add_argument("-p","--pattern", help="shaped crafting pattern, e.g. '\"SSS\",\" T \",\" T \"'")
@@ -110,8 +115,6 @@ group2.add_argument("-k","--keys",
     help="key values for pattern, semi-colon separated; e.g. 'S=minecraft:iron;T=forge:items/wooden_rod'")
 group2.add_argument("-a","--alloy_inputs", 
         help="the 2 inputs to fusion alloying, semi-colon separated: e.g. 'minecraft:iron; minecraft:items/coals'")
-parser.add_argument("--xp", type=float, help="smelting xp")
-
 args = parser.parse_args()
 #print(args, "\n")
 # end command-line arguments
@@ -127,7 +130,12 @@ if tail != 'data':
     print('Warning: not in data/{}/recipes directory'.format(modid))
     exit()
 
-filename = "{}.json".format(args.result)
+if args.filename != None:
+    filename = "{}.json".format(args.filename)
+else:
+    # clean up any ':'
+    tempstr = args.result.split(':')[-1]
+    filename = "{}.json".format(tempstr)
 
 if args.type == 'shapeless':
     recipe = copy.deepcopy(SHAPELESS_TEMPLATE)
@@ -178,7 +186,7 @@ elif (args.type == 'smelting') or (args.type == 'smoking') \
 elif args.type == 'fusion':
     if not os.path.exists("./fusion_furnace"):
         os.mkdir("./fusion_furnace")
-    filename = "./fusion_furnace/{}.json".format(args.result)
+    filename = "./fusion_furnace/{}".format(filename)
     recipe = copy.deepcopy(FUSION_TEMPLATE)
     recipe["output"]["item"] =  "{}:{}".format(modid, args.result)
     if args.result_count > 1:
@@ -198,7 +206,7 @@ else:
     del recipe["conditions"]
 
 with open(filename, 'w') as f:
-    json.dump(recipe, f, indent=4, sort_keys=True)
+    json.dump(recipe, f, indent=4, sort_keys=False)
 
 print("Recipe done")
 
