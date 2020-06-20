@@ -7,6 +7,18 @@ Must be run in src/main/resources/data/<modid>/advancements/recipes.
 
 SYNOPSIS:
 
+make_recipe_advancements.py [-h] [-i ITEM]
+                                   recipe_list [recipe_list ...]
+
+Generate recipe advancements
+
+positional arguments:
+  recipe_list           list of recipes to be granted
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i ITEM, --item ITEM  id of item whose possession triggers the advancement
+
 """
 
 import sys
