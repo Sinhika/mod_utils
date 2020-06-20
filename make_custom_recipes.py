@@ -132,7 +132,10 @@ if tail != 'data':
 
 # get filename
 if args.filename != None:
-    filename = "{}.json".format(args.filename)
+    if args.type == 'fusion':
+        filename = "./fusion_furnace/{}.json".format(args.filename)
+    else:
+        filename = "{}.json".format(args.filename)
 else:
     # clean up any ':'
     tempstr = args.result.split(':')[-1]
