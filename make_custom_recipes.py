@@ -130,25 +130,38 @@ if tail != 'data':
     print('Warning: not in data/{}/recipes directory'.format(modid))
     exit()
 
+# get filename
 if args.filename != None:
     filename = "{}.json".format(args.filename)
 else:
     # clean up any ':'
     tempstr = args.result.split(':')[-1]
-    filename = "{}.json".format(tempstr)
+    if (args.type == 'smelting') or (args.type == 'smoking') \
+        or (args.type == 'blasting') or (args.type == 'campfire'):
+        filename = "{}_from_{}.json".format(tempstr, args.type)
+    elif args.type == 'fusion':
+        filename = "./fusion_furnace/{}.json".format(tempstr)
+    else:
+        filename = "{}.json".format(tempstr)
 
+# fix up result name
+if ':' in args.result:
+    result = args.result
+else:
+    result = "{}:{}".format(modid, args.result)
+    
 if args.type == 'shapeless':
     recipe = copy.deepcopy(SHAPELESS_TEMPLATE)
     recipe["ingredients"][0]["item"] = args.ingredient
     if args.count > 1:
         recipe["ingredients"][0]["count"] = args.count
-    recipe["result"]["item"] = "{}:{}".format(modid, args.result)
+    recipe["result"]["item"] = result
     if args.result_count > 1:
         recipe["result"]["count"] = args.result_count
         
 elif args.type == 'shaped':
     recipe = copy.deepcopy(SHAPED_TEMPLATE)
-    recipe["result"]["item"] = "{}:{}".format(modid, args.result)
+    recipe["result"]["item"] = result
     if args.result_count > 1:
         recipe["result"]["count"] = args.result_count
     recipe["pattern"] = [a for a in args.pattern.split(',')]
@@ -163,12 +176,11 @@ elif args.type == 'shaped':
 elif (args.type == 'smelting') or (args.type == 'smoking') \
      or (args.type == 'blasting') or (args.type == 'campfire'):
     recipe = copy.deepcopy(SMELTING_TEMPLATE)
-    filename = "{}_from_{}.json".format(args.result, args.type)
     recipe["ingredient"]["item"] = args.ingredient
     if "/" in args.ingredient:
         recipe["ingredients"]["tag"] = args.ingredient
         del recipe["ingredient"]["item"]
-    recipe["result"] = "{}:{}".format(modid, args.result)
+    recipe["result"] = result
     recipe["experience"] = args.xp
 
     if args.type == 'smoking':
@@ -186,9 +198,8 @@ elif (args.type == 'smelting') or (args.type == 'smoking') \
 elif args.type == 'fusion':
     if not os.path.exists("./fusion_furnace"):
         os.mkdir("./fusion_furnace")
-    filename = "./fusion_furnace/{}".format(filename)
     recipe = copy.deepcopy(FUSION_TEMPLATE)
-    recipe["output"]["item"] =  "{}:{}".format(modid, args.result)
+    recipe["output"]["item"] = result
     if args.result_count > 1:
         recipe["output"]["count"] = args.result_count
     inputs_list = args.alloy_inputs.split(';')
