@@ -19,7 +19,8 @@ optional arguments:
   -h, --help            show this help message and exit
   -n, --no-nugget       do not generate nugget recipes
   -c, --conditions      insert flag condition into recipe. Will need editing.
-  -L, --large-chunk     create recipe for large chunk
+  -L, --large-chunk     create recipes for large chunk
+  -M, --medium-chunk    create recipes for medium chunk
   -i ITEM, --item ITEM  alternate name for item
   -b BLOCK, --block BLOCK
                         alternate name for block
@@ -34,7 +35,8 @@ import json
 import copy
 
 STORAGE = ('block', 'ingot', 'ingot_from_nuggets', 'nugget', 'large_chunk',
-           'nuggets_from_chunk')
+           'nuggets_from_chunk', 'medium_chunk', 'medium_chunk2', 
+           'nuggets_from_medium')
 
 PATTERN_TEMPLATES = { 
     'block' : ["SSS", "SSS", "SSS"],
@@ -42,7 +44,10 @@ PATTERN_TEMPLATES = {
     'ingot_from_nuggets' : ["###", "###", "###"],
     'nugget' : "shapeless",
     'large_chunk' : ["###","# #", "###"],
-    'nuggets_from_chunk' : "shapeless"
+    'nuggets_from_chunk' : "shapeless",
+    'medium_chunk' : ["##","##" ],
+    'medium_chunk2' : "shapeless",
+    'nuggets_from_medium' : "shapeless"
 }
 
 SHAPED_TEMPLATE = { 
@@ -76,6 +81,8 @@ parser.add_argument("-c", "--conditions", action="store_true",
         help="insert flag condition into recipe. Will need editing.")
 parser.add_argument("-L", "--large-chunk", action="store_true",
         help="create recipe for large chunk")
+parser.add_argument("-M", "--medium-chunk", action="store_true",
+        help="create recipe for medium chunk")
 parser.add_argument("-i","--item", help="alternate name for item",
         default="ingot")
 parser.add_argument("-b","--block", help="alternate name for block",
@@ -112,12 +119,18 @@ ingot2_name = slist[2]
 nugget_name = slist[3]
 slist[4] = "large_{}_chunk".format(args.material)
 large_chunk_name = slist[4]
+slist[6] = "medium_{}_chunk".format(args.material)
+medium_chunk_name = slist[6]
+slist[7] = "medium_{}_chunk2".format(args.material)
+slist[8] = "{}_nuggets_from_medium".format(args.material)
 
 item_list = slist[0:2]
 if not args.no_nugget:
     item_list.extend(slist[2:4])
 if args.large_chunk:
     item_list.extend(slist[4:6])
+if args.medium_chunk:
+    item_list.extend(slist[6:9])
 
 ingredients = { a: None for a in mod_storage}
 ingredients["block"] = ingot_name
@@ -126,6 +139,9 @@ ingredients["ingot_from_nuggets"] = nugget_name
 ingredients["nugget"] = ingot_name
 ingredients["large_chunk"] = nugget_name
 ingredients["nuggets_from_chunk"] = large_chunk_name
+ingredients["medium_chunk"] = nugget_name
+ingredients["medium_chunk2"] = large_chunk_name
+ingredients["nuggets_from_medium"] = medium_chunk_name
 
 print("Generating {} recipes for mod {}:".format(args.material, modid))
 for a in item_list:
@@ -149,11 +165,20 @@ for item in item_list:
     result_item = item
     if item.startswith('large'):
         type_of_item = 'large_chunk'
+    elif item.startswith('medium'):
+        if item.endswith('2'):
+            type_of_item = 'medium_chunk2'
+            result_item = "medium_{}_chunk".format(args.material) 
+        else:
+            type_of_item = 'medium_chunk'
     elif item.endswith('nuggets'):
         type_of_item = 'ingot_from_nuggets'
         result_item = "{}_{}".format(args.material, args.item)
     elif item.endswith('nuggets_from_chunk'):
         type_of_item = 'nuggets_from_chunk'
+        result_item = "{}_{}".format(args.material, 'nugget')
+    elif item.endswith('nuggets_from_medium'):
+        type_of_item = 'nuggets_from_medium'
         result_item = "{}_{}".format(args.material, 'nugget')
     else:
         type_of_item = item.rsplit("_",1)[1]
@@ -176,7 +201,11 @@ for item in item_list:
 
     recipe["result"]["item"] = "{}:{}".format(modid, result_item)
     if type_of_item == 'nuggets_from_chunk':
-            recipe["result"]["count"] = 8
+        recipe["result"]["count"] = 8
+    elif type_of_item == 'nuggets_from_medium':
+        recipe["result"]["count"] = 4
+    elif type_of_item == 'medium_chunk2':
+        recipe["result"]["count"] = 2
 
     if args.conditions:
         mycondition = copy.deepcopy(CONDITION_TEMPLATE)
