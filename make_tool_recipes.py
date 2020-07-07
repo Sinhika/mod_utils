@@ -64,7 +64,7 @@ INGREDIENT_TEMPLATE = {
 CONDITION_TEMPLATE = { "type" : None, "flag" : None }
 
 # command-line arguments
-parser = argparse.ArgumentParser(description="Generate standard tool, armor and storage block recipes")
+parser = argparse.ArgumentParser(description="Generate standard tool and armor recipes, including vanilla recycling")
 parser.add_argument("tooltype_prefix", help="tool material-based prefix for standard tools; e.g. 'iron' for 'iron_axe','iron_pickaxe', etc")
 parser.add_argument("-a", "--armor", action="store_true",
         help="also generate armor recipes for material");
