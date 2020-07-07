@@ -209,6 +209,9 @@ elif args.type == 'fusion':
     recipe["inputs"][0]["item"] = inputs_list[0]
     recipe["inputs"][1]["item"] = inputs_list[1]
     recipe["catalyst"]["item"] = args.catalyst
+    if args.catalyst == 'minecraft:coals':
+        recipe["catalyst"]["tag"] = args.catalyst
+        del recipe["catalyst"]["item"]
     recipe["experience"] = args.xp
 
 if args.conditions:
