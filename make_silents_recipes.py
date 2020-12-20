@@ -42,6 +42,8 @@ import json
 import copy
 
 CRUSHING_TEMPLATE = {
+    "conditions" : [ { "modid" : "silents_mechanisms", 
+                       "type" : "forge:mod_loaded"}],
     "type" : "silents_mechanisms:crushing",
     "process_time" : 300,
     "ingredient": None,
@@ -49,6 +51,8 @@ CRUSHING_TEMPLATE = {
 }
 
 ALLOY_TEMPLATE = {
+    "conditions" : [ { "modid" : "silents_mechanisms", 
+                       "type" : "forge:mod_loaded"}],
     "type" : "silents_mechanisms:alloy_smelting",
     "process_time" : 200,
     "ingredients" : [],
