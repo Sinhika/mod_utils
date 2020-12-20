@@ -70,6 +70,7 @@ parser = argparse.ArgumentParser(description="Generate Silents recipes. Must be 
 parser.add_argument("filename", help="specify base output filename")
 parser.add_argument("--type", "-t", choices=['crusher', 'alloy_smelter'],
                     help="type of recipe", required=True)
+parser.add_argument("--ticks", "-k", type=int, help="process_time in ticks", default=300)
 parser.add_argument("--ingredient", "-i", required=True, nargs='+',
         help="id of ingredient; optionally with count (alloy smelter); e.g. 'foo:bar_dust,2' preface with # if a tag")
 parser.add_argument("--result","-r", required=True, nargs='+',
@@ -102,6 +103,7 @@ else:
 # build recipe
 if args.type == 'crusher':
     recipe = copy.deepcopy(CRUSHING_TEMPLATE)
+    recipe['process_time'] = args.ticks
 
     # parse ingredient list (only 1 is recognized)
     ingredient = args.ingredient[0]
@@ -116,9 +118,15 @@ if args.type == 'crusher':
     for rr in args.result:
         parts = rr.split(',')
         if len(parts) > 1:
-            result = copy.deepcopy(ITEM_W_CHANCE_TMPL)
-            result['item'] = parts[0]
-            result['chance'] = float(parts[1])
+            if '.' in parts[1]:
+                result = copy.deepcopy(ITEM_W_CHANCE_TMPL)
+                result['item'] = parts[0]
+                result['chance'] = float(parts[1])
+            else:
+                result = copy.deepcopy(ITEM_W_COUNT_TMPL)
+                result['item'] = parts[0]
+                result['count'] = parts[1]
+
         else:
             result = copy.deepcopy(ITEM_TEMPLATE)
             result['item'] = parts[0]
@@ -126,6 +134,7 @@ if args.type == 'crusher':
 
 else:
     recipe = copy.deepcopy(ALLOY_TEMPLATE)
+    recipe['process_time'] = args.ticks
    
     # ingredients
     for ii in args.ingredient:
