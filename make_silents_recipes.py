@@ -125,7 +125,7 @@ if args.type == 'crusher':
             else:
                 result = copy.deepcopy(ITEM_W_COUNT_TMPL)
                 result['item'] = parts[0]
-                result['count'] = parts[1]
+                result['count'] = int(parts[1])
 
         else:
             result = copy.deepcopy(ITEM_TEMPLATE)
