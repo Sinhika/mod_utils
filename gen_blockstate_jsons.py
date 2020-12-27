@@ -20,7 +20,7 @@ import copy
 BLOCK_TEMPLATE = { 'variants' : { '' : { "model" : None } } }
 
 PRESSURE_PLATE = { 'variants' : { 
-    'powered=false' : { "model" : None } 
+    'powered=false' : { "model" : None },
     'powered=true' : { "model" : None } 
 } }
 
