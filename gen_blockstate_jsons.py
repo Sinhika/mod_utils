@@ -19,11 +19,18 @@ import copy
 
 BLOCK_TEMPLATE = { 'variants' : { '' : { "model" : None } } }
 
+PRESSURE_PLATE = { 'variants' : { 
+    'powered=false' : { "model" : None } 
+    'powered=true' : { "model" : None } 
+} }
+
 # command-line arguments
 parser = argparse.ArgumentParser(description="Generate blockstates for standard block types")
 parser.add_argument("blockname", help="blockstate filename")
-parser.add_argument("--type", "-t", choices=['simple', 'crop', 'facing', 'bars', 'doors', 'pane',
-    'stairs', 'other'], help="type of blockstate", required=True)
+parser.add_argument("--type", "-t", 
+        choices=['simple', 'crop', 'facing', 'bars', 'doors', 'pane', 'stairs',
+                 'pressure_plate', 'other'], 
+        help="type of blockstate", required=True)
 
 args = parser.parse_args()
 #print(args);
@@ -44,6 +51,11 @@ if tail != 'assets':
 if args.type == 'simple':
     blockstate = copy.deepcopy(BLOCK_TEMPLATE)
     blockstate['variants']['']['model'] = "{}:block/{}".format(modid, args.blockname)
+elif args.type == 'pressure_plate':
+    blockstate = copy.deepcopy(PRESSURE_PLATE)
+    blockstate['variants']['powered=false']['model'] = "{}:block/{}".format(modid, args.blockname)
+    blockstate['variants']['powered=true']['model'] = "{}:block/{}_down".format(modid, args.blockname)
+
 
 # TODO
 
