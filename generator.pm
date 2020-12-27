@@ -34,7 +34,7 @@ our %EXPORT_TAGS = ();
 # constants to be re-defined when necessary
 # where are the vanilla assets?
 our $MC_ASSETS = File::Spec->catdir($ENV{HOME},
-                        "/Projects/Minecraft_1.15/vanilla/assets/minecraft");
+                        "/Projects/Minecraft_1.16/vanilla_1.16.2/assets/minecraft");
 our $MC_BLOCKSTATE_PATH = "${MC_ASSETS}/blockstates";
 our $MC_BLOCK_MODEL_PATH = "${MC_ASSETS}/models/block";
 our $MC_ITEM_MODEL_PATH = "${MC_ASSETS}/models/item";
