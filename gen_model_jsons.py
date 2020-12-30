@@ -20,11 +20,11 @@ ITEM_BLOCK = { "parent" : None }
 
 BLOCK_PLATE = { 
         "parent" : "minecraft:block/pressure_plate_up",
-        "textures" : None
+        "textures" : { "texture" : None }
     }
 BLOCK_PLATE_DOWN = {
         "parent" : "minecraft:block/pressure_plate_down",
-        "textures" : None
+        "textures" : { "texture" : None }
         }
 
 # LOOKUP TABLES FOR types => templates
@@ -75,7 +75,7 @@ if not args.item_only:
         # there are two model files for pressure plates...
         block_model = copy.deepcopy(BLOCK_PLATE_DOWN)
         texture = "{}:block/{}".format(modid, args.modelname)
-        block_model['textures'] = texture
+        block_model['textures']['texture'] = texture
         # write the 'down' model file.
         filename = os.path.join(BLOCK_MODEL_PATH, 
                                "{}_down.json".format(args.modelname))
@@ -85,7 +85,7 @@ if not args.item_only:
 
         # now fall through and create 'up' model as default.
         block_model = copy.deepcopy(BLOCK_PLATE)
-        block_model['textures'] = texture
+        block_model['textures']['texture'] = texture
     # TODO
     
     filename = os.path.join(BLOCK_MODEL_PATH, "{}.json".format(args.modelname))
