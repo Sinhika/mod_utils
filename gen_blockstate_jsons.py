@@ -6,6 +6,20 @@ Must be run in src/main/resources/assets/<modid>/blockstates.
 
 SYNOPSIS:
 
+gen_blockstate_jsons.py [-h] --type
+                               {simple,crop,facing,bars,doors,pane,stairs,pressure_plate,other}
+                               blockname
+
+Generate blockstates for standard block types
+
+positional arguments:
+  blockname             blockstate filename
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --type {simple,crop,facing,bars,doors,pane,stairs,pressure_plate,other}, -t {simple,crop,facing,bars,doors,pane,stairs,pressure_plate,other}
+                        type of blockstate
+
 """
 
 import sys
