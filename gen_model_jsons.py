@@ -18,13 +18,19 @@ import copy
 BLOCK_BLOCK = { "parent" : "block/cube_all", "textures" : { "all" : None }}
 ITEM_BLOCK = { "parent" : None }
 
-BLOCK_PLATE = {}
-ITEM_PLATE = {}
+BLOCK_PLATE = { 
+        "parent" : "minecraft:block/pressure_plate_up",
+        "textures" : None
+    }
+BLOCK_PLATE_DOWN = {
+        "parent" : "minecraft:block/pressure_plate_down",
+        "textures" : None
+        }
 
 # LOOKUP TABLES FOR types => templates
-LOOKUP_BLOCK = { "block" : BLOCK_BLOCK }
+LOOKUP_BLOCK = { 'block' : BLOCK_BLOCK  }
 
-LOOKUP_ITEM = { "blockitem" : ITEM_BLOCK }
+LOOKUP_ITEM = { 'block' : ITEM_BLOCK, 'pressure_plate' : ITEM_BLOCK }
 
 # command-line arguments
 parser = argparse.ArgumentParser(description="Generate block & item models as specified")
@@ -51,31 +57,51 @@ if tail != 'assets':
     exit()
 
 BLOCK_MODEL_PATH = os.path.join(os.getcwd(), 'block')
+if not os.path.exists(BLOCK_MODEL_PATH):
+    os.makedirs(BLOCK_MODEL_PATH)
+
 ITEM_MODEL_PATH =  os.path.join(os.getcwd(), 'item')
+if not os.path.exists(ITEM_MODEL_PATH):
+    os.makedirs(ITEM_MODEL_PATH)
 
 # construct the models
 # blocks
 if not args.item_only:
-    block_model = copy.deepcopy(LOOKUP_BLOCK[args.type])
     if args.type in ('block',):
+        block_model = copy.deepcopy(LOOKUP_BLOCK[args.type])
         texture = "{}:block/{}".format(modid, args.modelname)
         block_model['textures']['all'] = texture
+    elif args.type == 'pressure_plate':
+        # there are two model files for pressure plates...
+        block_model = copy.deepcopy(BLOCK_PLATE_DOWN)
+        texture = "{}:block/{}".format(modid, args.modelname)
+        block_model['textures'] = texture
+        # write the 'down' model file.
+        filename = os.path.join(BLOCK_MODEL_PATH, 
+                               "{}_down.json".format(args.modelname))
+        with open(filename, 'w') as f:
+            json.dump(block_model, f, indent=4, sort_keys=False)
+        del block_model
+
+        # now fall through and create 'up' model as default.
+        block_model = copy.deepcopy(BLOCK_PLATE)
+        block_model['textures'] = texture
     # TODO
     
-    filename = os.join(BLOCK_MODEL_PATH, "{}.json".format(args.modelname))
+    filename = os.path.join(BLOCK_MODEL_PATH, "{}.json".format(args.modelname))
     with open(filename, 'w') as f:
         json.dump(block_model, f, indent=4, sort_keys=False)
 
 # items
 item_model = copy.deepcopy(LOOKUP_ITEM[args.type])
-if args.type in ('block','blockitem'):
+if args.type in ('block','pressure_plate'):
     item_model = copy.deepcopy(LOOKUP_ITEM[args.type])
-    if args.type in ('block',):
+    if args.type in ('block','pressure_plate'):
         parent = "{}:block/{}".format(modid, args.modelname)
         item_model['parent'] = parent
     #TODO
 
-filename = os.join(ITEM_MODEL_PATH, "{}.json".format(args.modelname))
+filename = os.path.join(ITEM_MODEL_PATH, "{}.json".format(args.modelname))
 with open(filename, 'w') as f:
     json.dump(item_model, f, indent=4, sort_keys=False)
 
