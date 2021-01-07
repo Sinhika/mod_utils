@@ -17,7 +17,8 @@ import copy
 # TEMPLATES
 BLOCK_BLOCK = { "parent" : "block/cube_all", "textures" : { "all" : None }}
 ITEM_BLOCK = { "parent" : None }
-
+ITEM_GENERATED = { "parent": "minecraft:item/generated", "textures": {"layer0": None } }
+ITEM_HANDHELD = { "parent": "minecraft:item/handheld", "textures": { "layer0": None } }
 BLOCK_PLATE = { 
         "parent" : "minecraft:block/pressure_plate_up",
         "textures" : { "texture" : None }
@@ -30,7 +31,8 @@ BLOCK_PLATE_DOWN = {
 # LOOKUP TABLES FOR types => templates
 LOOKUP_BLOCK = { 'block' : BLOCK_BLOCK  }
 
-LOOKUP_ITEM = { 'block' : ITEM_BLOCK, 'pressure_plate' : ITEM_BLOCK }
+LOOKUP_ITEM = { 'block' : ITEM_BLOCK, 'pressure_plate' : ITEM_BLOCK, 
+        'inventory' : ITEM_GENERATED, 'tool' : ITEM_HANDHELD, 'armor' : ITEM_GENERATED }
 
 # command-line arguments
 parser = argparse.ArgumentParser(description="Generate block & item models as specified")
@@ -39,7 +41,7 @@ parser.add_argument("--item_only", "--item", help="item model only", action="sto
 parser.add_argument("--type", "-t", 
         choices=['block', 'crop', 'facing', 'bars', 'doors', 'pane', 'stairs',
                  'pressure_plate', 'pillar', 'log', 'machine', 'blockitem', 'bow',
-                 'armor_set', 'tool_set', 'inventory'], 
+                 'armor', 'tool', 'inventory'], 
         help="type of blockstate", required=True)
 
 args = parser.parse_args()
@@ -94,11 +96,14 @@ if not args.item_only:
 
 # items
 item_model = copy.deepcopy(LOOKUP_ITEM[args.type])
-if args.type in ('block','pressure_plate'):
+if args.type in ('block','pressure_plate','inventory','tool','armor'):
     item_model = copy.deepcopy(LOOKUP_ITEM[args.type])
     if args.type in ('block','pressure_plate'):
         parent = "{}:block/{}".format(modid, args.modelname)
         item_model['parent'] = parent
+    elif args.type in ('inventory','tool','armor'):
+        texture = "{}:item/{}".format(modid, args.modelname)
+        item_model['textures']['layer0'] = texture
     #TODO
 
 filename = os.path.join(ITEM_MODEL_PATH, "{}.json".format(args.modelname))
