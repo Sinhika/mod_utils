@@ -15,23 +15,33 @@ import json
 import copy
 
 # TEMPLATES
-BLOCK_BLOCK = { "parent" : "block/cube_all", "textures" : { "all" : None }}
+# items
 ITEM_BLOCK = { "parent" : None }
 ITEM_GENERATED = { "parent": "minecraft:item/generated", "textures": {"layer0": None } }
 ITEM_HANDHELD = { "parent": "minecraft:item/handheld", "textures": { "layer0": None } }
+# blocks
+BLOCK_BLOCK = { "parent" : "block/cube_all", "textures" : { "all" : None }}
 BLOCK_PLATE = { 
-        "parent" : "minecraft:block/pressure_plate_up",
-        "textures" : { "texture" : None }
-    }
+    "parent" : "minecraft:block/pressure_plate_up",
+    "textures" : { "texture" : None }
+}
 BLOCK_PLATE_DOWN = {
-        "parent" : "minecraft:block/pressure_plate_down",
-        "textures" : { "texture" : None }
-        }
+    "parent" : "minecraft:block/pressure_plate_down",
+    "textures" : { "texture" : None }
+    }
+BLOCK_SLAB = {
+    "parent": "minecraft:block/slab",
+    "textures": { "bottom": None, "top": None, "side": None }    
+}
+BLOCK_SLAB_TOP = {
+    "parent": "minecraft:block/slab_top",
+    "textures": { "bottom": None, "top": None, "side": None }    
+}
 
 # LOOKUP TABLES FOR types => templates
 LOOKUP_BLOCK = { 'block' : BLOCK_BLOCK  }
 
-LOOKUP_ITEM = { 'block' : ITEM_BLOCK, 'pressure_plate' : ITEM_BLOCK, 
+LOOKUP_ITEM = { 'block' : ITEM_BLOCK, 'pressure_plate' : ITEM_BLOCK, 'slab' : ITEM_BLOCK,
         'inventory' : ITEM_GENERATED, 'tool' : ITEM_HANDHELD, 'armor' : ITEM_GENERATED }
 
 # command-line arguments
@@ -39,7 +49,7 @@ parser = argparse.ArgumentParser(description="Generate block & item models as sp
 parser.add_argument("modelname", help="model filename")
 parser.add_argument("--item_only", "--item", help="item model only", action="store_true")
 parser.add_argument("--type", "-t", 
-        choices=['block', 'crop', 'facing', 'bars', 'doors', 'pane', 'stairs',
+        choices=['block', 'crop', 'facing', 'bars', 'door', 'pane', 'stairs', 'slab',
                  'pressure_plate', 'pillar', 'log', 'machine', 'blockitem', 'bow',
                  'armor', 'tool', 'inventory'], 
         help="type of blockstate", required=True)
@@ -88,8 +98,31 @@ if not args.item_only:
         # now fall through and create 'up' model as default.
         block_model = copy.deepcopy(BLOCK_PLATE)
         block_model['textures']['texture'] = texture
+    elif args.type == 'slab':
+        # there are two model files for slabs
+        block_model = copy.deepcopy(BLOCK_SLAB)
+        stem = args.modelname
+        nn = stem.rfind('_slab')
+        stem = stem[0:nn]
+        texture = "{}:block/{}".format(modid, stem)
+        block_model['textures']['bottom'] = texture
+        block_model['textures']['top'] = texture
+        block_model['textures']['side'] = texture
+        # write the 'slab' model file.
+        filename = os.path.join(BLOCK_MODEL_PATH, "{}.json".format(args.modelname))
+        with open(filename, 'w') as f:
+            json.dump(block_model, f, indent=4, sort_keys=False)
+        del block_model
+        # now fall through and create 'top' model.
+        block_model = copy.deepcopy(BLOCK_SLAB_TOP)
+        block_model['textures']['bottom'] = texture
+        block_model['textures']['top'] = texture
+        block_model['textures']['side'] = texture
     # TODO
-    
+    else:
+        print("{} type not yet implemented, sorry.\n".format(args.type), file=sys.stderr)
+        sys.exit()
+
     filename = os.path.join(BLOCK_MODEL_PATH, "{}.json".format(args.modelname))
     with open(filename, 'w') as f:
         json.dump(block_model, f, indent=4, sort_keys=False)
@@ -105,6 +138,9 @@ if args.type in ('block','pressure_plate','inventory','tool','armor'):
         texture = "{}:item/{}".format(modid, args.modelname)
         item_model['textures']['layer0'] = texture
     #TODO
+    else:
+        print("{} type not yet implemented, sorry.\n".format(args.type), file=sys.stderr)
+        sys.exit()
 
 filename = os.path.join(ITEM_MODEL_PATH, "{}.json".format(args.modelname))
 with open(filename, 'w') as f:
