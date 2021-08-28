@@ -142,38 +142,14 @@ DOORS_TEMPLATE = {  "variants": {
     "facing=south,half=upper,hinge=left,open=true": { "model": None, "y": 180 },
     "facing=south,half=upper,hinge=right,open=false": { "model": None, "y": 90 },
     "facing=south,half=upper,hinge=right,open=true": { "model": None },
-    "facing=west,half=lower,hinge=left,open=false": {
-      "model": None,
-      "y": 180
-    },
-    "facing=west,half=lower,hinge=left,open=true": {
-      "model": None,
-      "y": 270
-    },
-    "facing=west,half=lower,hinge=right,open=false": {
-      "model": None,
-      "y": 180
-    },
-    "facing=west,half=lower,hinge=right,open=true": {
-      "model": None,
-      "y": 90
-    },
-    "facing=west,half=upper,hinge=left,open=false": {
-      "model": None,
-      "y": 180
-    },
-    "facing=west,half=upper,hinge=left,open=true": {
-      "model": None,
-      "y": 270
-    },
-    "facing=west,half=upper,hinge=right,open=false": {
-      "model": None,
-      "y": 180
-    },
-    "facing=west,half=upper,hinge=right,open=true": {
-      "model": None,
-      "y": 90
-    }
+    "facing=west,half=lower,hinge=left,open=false": { "model": None, "y": 180 },
+    "facing=west,half=lower,hinge=left,open=true": { "model": None, "y": 270 },
+    "facing=west,half=lower,hinge=right,open=false": { "model": None, "y": 180 },
+    "facing=west,half=lower,hinge=right,open=true": { "model": None, "y": 90 },
+    "facing=west,half=upper,hinge=left,open=false": { "model": None, "y": 180 },
+    "facing=west,half=upper,hinge=left,open=true": { "model": None, "y": 270 },
+    "facing=west,half=upper,hinge=right,open=false": { "model": None, "y": 180 },
+    "facing=west,half=upper,hinge=right,open=true": { "model": None, "y": 90 }
 }}
 
 # command-line arguments
@@ -284,7 +260,50 @@ elif args.type == 'stairs':
     blockstate['variants']["facing=west,half=top,shape=inner_left"]['model'] = inner_stairs
     blockstate['variants']["facing=south,half=top,shape=inner_left"]['model'] = inner_stairs
     blockstate['variants']["facing=north,half=top,shape=inner_left"]['model'] = inner_stairs
-    
+
+elif args.type == 'doors':
+    blockstate = copy.deepcopy(DOORS_TEMPLATE)
+    lblockname = args.blockname
+    bottom = "{}:block/{}_bottom".format(modid, lblockname)
+    bottom_hinge = "{}:block/{}_bottom_hinge".format(modid, lblockname)
+    top = "{}:block/{}_top".format(modid, lblockname)
+    top_hinge = "{}:block/{}_top_hinge".format(modid, lblockname)
+    blockstate['variants']["facing=east,half=lower,hinge=left,open=false"]['model'] = bottom
+    blockstate['variants']["facing=east,half=lower,hinge=left,open=true"]['model'] = bottom_hinge
+    blockstate['variants']["facing=east,half=lower,hinge=right,open=false"]['model'] = bottom_hinge
+    blockstate['variants']["facing=east,half=lower,hinge=right,open=true"]['model'] = bottom
+    blockstate['variants']["facing=east,half=upper,hinge=left,open=false"]['model'] = top
+    blockstate['variants']["facing=east,half=upper,hinge=left,open=true"]['model'] = top_hinge
+    blockstate['variants']["facing=east,half=upper,hinge=right,open=false"]['model'] = top_hinge
+    blockstate['variants']["facing=east,half=upper,hinge=right,open=true"]['model'] = top
+
+    blockstate['variants']["facing=north,half=lower,hinge=left,open=false"]['model'] = bottom
+    blockstate['variants']["facing=north,half=lower,hinge=left,open=true"]['model'] = bottom_hinge
+    blockstate['variants']["facing=north,half=lower,hinge=right,open=false"]['model'] = bottom_hinge
+    blockstate['variants']["facing=north,half=lower,hinge=right,open=true"]['model'] = bottom
+    blockstate['variants']["facing=north,half=upper,hinge=left,open=false"]['model'] = top
+    blockstate['variants']["facing=north,half=upper,hinge=left,open=true"]['model'] = top_hinge
+    blockstate['variants']["facing=north,half=upper,hinge=right,open=false"]['model'] = top_hinge
+    blockstate['variants']["facing=north,half=upper,hinge=right,open=true"]['model'] = top
+
+    blockstate['variants']["facing=south,half=lower,hinge=left,open=false"]['model'] = bottom
+    blockstate['variants']["facing=south,half=lower,hinge=left,open=true"]['model'] = bottom_hinge
+    blockstate['variants']["facing=south,half=lower,hinge=right,open=false"]['model'] = bottom_hinge
+    blockstate['variants']["facing=south,half=lower,hinge=right,open=true"]['model'] = bottom
+    blockstate['variants']["facing=south,half=upper,hinge=left,open=false"]['model'] = top
+    blockstate['variants']["facing=south,half=upper,hinge=left,open=true"]['model'] = top_hinge
+    blockstate['variants']["facing=south,half=upper,hinge=right,open=false"]['model'] = top_hinge
+    blockstate['variants']["facing=south,half=upper,hinge=right,open=true"]['model'] = top
+
+    blockstate['variants']["facing=west,half=lower,hinge=left,open=false"]['model'] = bottom
+    blockstate['variants']["facing=west,half=lower,hinge=left,open=true"]['model'] = bottom_hinge
+    blockstate['variants']["facing=west,half=lower,hinge=right,open=false"]['model'] = bottom_hinge
+    blockstate['variants']["facing=west,half=lower,hinge=right,open=true"]['model'] = bottom
+    blockstate['variants']["facing=west,half=upper,hinge=left,open=false"]['model'] = top
+    blockstate['variants']["facing=west,half=upper,hinge=left,open=true"]['model'] = top_hinge
+    blockstate['variants']["facing=west,half=upper,hinge=right,open=false"]['model'] = top_hinge
+    blockstate['variants']["facing=west,half=upper,hinge=right,open=true"]['model'] = top
+
 else:
     print("Error: {} not yet implemented\n".format(args.type), file=sys.stderr)
     sys.exit()
