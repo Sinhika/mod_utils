@@ -17,7 +17,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --type {simple,crop,facing,bars,doors,pane,stairs,pressure_plate,other}, -t {simple,crop,facing,bars,doors,pane,stairs,pressure_plate,other}
+  --type {simple,crop,facing,bars,door,pane,stairs,pressure_plate,other}, -t {simple,crop,facing,bars,door,pane,stairs,pressure_plate,other}
                         type of blockstate
 
 """
@@ -261,7 +261,7 @@ elif args.type == 'stairs':
     blockstate['variants']["facing=south,half=top,shape=inner_left"]['model'] = inner_stairs
     blockstate['variants']["facing=north,half=top,shape=inner_left"]['model'] = inner_stairs
 
-elif args.type == 'doors':
+elif args.type == 'door':
     blockstate = copy.deepcopy(DOORS_TEMPLATE)
     lblockname = args.blockname
     bottom = "{}:block/{}_bottom".format(modid, lblockname)
