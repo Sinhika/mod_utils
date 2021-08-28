@@ -186,6 +186,9 @@ elif args.type == 'pressure_plate':
 elif args.type == 'slab':
     blockstate = copy.deepcopy(SLAB_TEMPLATE)
     lblockname = args.blockname
+    if lblockname.endswith('_slab'):
+        nn = lblockname.rindex('_slab')
+        lblockname = lblockname[0:nn]
     if lblockname.endswith('_block'):
         nn = lblockname.rindex('_block')
         lblockname = lblockname[0:nn]

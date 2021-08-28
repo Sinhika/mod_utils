@@ -104,6 +104,8 @@ if not args.item_only:
         stem = args.modelname
         nn = stem.rfind('_slab')
         stem = stem[0:nn]
+        if stem.endswith('brick'):
+            stem = "{}s".format(stem)
         texture = "{}:block/{}".format(modid, stem)
         block_model['textures']['bottom'] = texture
         block_model['textures']['top'] = texture
