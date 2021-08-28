@@ -38,12 +38,19 @@ PRESSURE_PLATE = { 'variants' : {
     'powered=true' : { "model" : None } 
 } }
 
+SLAB_TEMPLATE = { 'variants' : { 
+    'type=bottom' : { "model" : None },
+    'type=double' : { "model" : None },
+    'type=top' : { "model" : None },
+} }
+
+
 # command-line arguments
 parser = argparse.ArgumentParser(description="Generate blockstates for standard block types")
 parser.add_argument("blockname", help="blockstate filename")
 parser.add_argument("--type", "-t", 
         choices=['simple', 'crop', 'facing', 'bars', 'doors', 'pane', 'stairs',
-                 'pressure_plate', 'other'], 
+                 'pressure_plate', 'slab', 'other'], 
         help="type of blockstate", required=True)
 
 args = parser.parse_args()
@@ -52,7 +59,7 @@ args = parser.parse_args()
 # parse directory and make sure we are in the right place...
 (head, tail) = os.path.split(os.getcwd())
 if tail != 'blockstates':
-    print('Warning: not in recipes directory')
+    print('Warning: not in blockstates directory')
     exit()
 (head, modid) = os.path.split(head)
 (head, tail) = os.path.split(head)
@@ -69,6 +76,15 @@ elif args.type == 'pressure_plate':
     blockstate = copy.deepcopy(PRESSURE_PLATE)
     blockstate['variants']['powered=false']['model'] = "{}:block/{}".format(modid, args.blockname)
     blockstate['variants']['powered=true']['model'] = "{}:block/{}_down".format(modid, args.blockname)
+elif args.type == 'slab':
+    lblockname = args.blockname
+    if lblockname.endswith('_block'):
+        nn = lblockname.rindex('_block');
+        lblockname = lblockname[0:nn]
+    blockstate = copy.deepcopy(SLAB_TEMPLATE)
+    blockstate['variants']['type=bottom']['model'] = "{}:block/{}".format(modid, "{}_slab".format(lblockname))
+    blockstate['variants']['type=double']['model'] = "{}:block/{}".format(modid, args.blockname)
+    blockstate['variants']['type=top']['model'] = "{}:block/{}".format(modid, "{}_slab_top".format(lblockname))
 
 
 # TODO
