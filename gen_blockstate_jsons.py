@@ -187,7 +187,10 @@ elif args.type == 'slab':
     blockstate = copy.deepcopy(SLAB_TEMPLATE)
     lblockname = args.blockname
     if lblockname.endswith('_block'):
-        nn = lblockname.rindex('_block');
+        nn = lblockname.rindex('_block')
+        lblockname = lblockname[0:nn]
+    elif lblockname.endswith('bricks'):
+        nn = lblockname.rindex('s')
         lblockname = lblockname[0:nn]
     blockstate['variants']['type=bottom']['model'] = "{}:block/{}".format(modid, "{}_slab".format(lblockname))
     blockstate['variants']['type=double']['model'] = "{}:block/{}".format(modid, args.blockname)
