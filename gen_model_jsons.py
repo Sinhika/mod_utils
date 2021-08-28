@@ -100,7 +100,7 @@ if not args.item_only:
         block_model['textures']['texture'] = texture
     elif args.type == 'slab':
         # there are two model files for slabs
-        block_model = copy.deepcopy(BLOCK_SLAB)
+        block_model = copy.deepcopy(BLOCK_SLAB_TOP)
         stem = args.modelname
         nn = stem.rfind('_slab')
         stem = stem[0:nn]
@@ -108,13 +108,13 @@ if not args.item_only:
         block_model['textures']['bottom'] = texture
         block_model['textures']['top'] = texture
         block_model['textures']['side'] = texture
-        # write the 'slab' model file.
-        filename = os.path.join(BLOCK_MODEL_PATH, "{}.json".format(args.modelname))
+        # write the 'slab_top' model file.
+        filename = os.path.join(BLOCK_MODEL_PATH, "{}_top.json".format(args.modelname))
         with open(filename, 'w') as f:
             json.dump(block_model, f, indent=4, sort_keys=False)
         del block_model
-        # now fall through and create 'top' model.
-        block_model = copy.deepcopy(BLOCK_SLAB_TOP)
+        # now fall through and create default 'slab' model.
+        block_model = copy.deepcopy(BLOCK_SLAB)
         block_model['textures']['bottom'] = texture
         block_model['textures']['top'] = texture
         block_model['textures']['side'] = texture
@@ -129,9 +129,9 @@ if not args.item_only:
 
 # items
 item_model = copy.deepcopy(LOOKUP_ITEM[args.type])
-if args.type in ('block','pressure_plate','inventory','tool','armor'):
+if args.type in ('block','pressure_plate','inventory','tool','armor','slab'):
     item_model = copy.deepcopy(LOOKUP_ITEM[args.type])
-    if args.type in ('block','pressure_plate'):
+    if args.type in ('block','pressure_plate','slab'):
         parent = "{}:block/{}".format(modid, args.modelname)
         item_model['parent'] = parent
     elif args.type in ('inventory','tool','armor'):
