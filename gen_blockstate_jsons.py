@@ -201,7 +201,7 @@ elif args.type == 'slab':
         nn = lblockname.rindex('s')
         lblockname = lblockname[0:nn]
     blockstate['variants']['type=bottom']['model'] = "{}:block/{}".format(modid, "{}_slab".format(lblockname))
-    blockstate['variants']['type=double']['model'] = "{}:block/{}".format(modid, args.blockname)
+    blockstate['variants']['type=double']['model'] = "{}:block/{}".format(modid, dblockname)
     blockstate['variants']['type=top']['model'] = "{}:block/{}".format(modid, "{}_slab_top".format(lblockname))
 elif args.type == 'bars':
     blockstate = copy.deepcopy(BARS_TEMPLATE)
